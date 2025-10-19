@@ -158,12 +158,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     if (_hasError) {
-      return const Center(
-        child: Text(
-          'Error loading video',
-          style: TextStyle(color: Colors.white),
-        ),
-      );
+      return Container();
     }
 
     if (_youtubeController != null) {
