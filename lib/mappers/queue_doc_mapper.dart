@@ -7,7 +7,7 @@ class QueueDocMapper {
   static QueueModel docToQueue(DocumentSnapshot document) {
     return QueueModel(
         document['number'],
-        IconDataSolid(document['icon']),
+        IconData(document['icon'], fontFamily: 'FontAwesomeSolid', fontPackage: 'font_awesome_flutter'),
         document['name'],
         Color(document['backgroundColor']),
         Colors.white,
