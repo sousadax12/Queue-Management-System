@@ -27,7 +27,13 @@ class MyApp extends StatelessWidget {
       builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
 // Check for errors
         if (snapshot.hasError) {
-          return Container(child: Text("Error"));
+          return MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: Text("Error: ${snapshot.error}"),
+              ),
+            ),
+          );
         }
 
         // Once complete, show your application
