@@ -4,7 +4,7 @@ Refs #1
 
 ## Status
 
-Proposed (2026-11-15)
+**Accepted (2026-11-15)**. See [Decision](#decision).
 
 **Revision 2 (2026-11-15).** New constraints:
 
@@ -536,4 +536,15 @@ Each milestone is one PR. Once M2 lands, M3–M4 and M5 can run in parallel. The
 
 ## Decision
 
-<!-- Left empty until the team decides. -->
+**Accepted on 2026-11-15.**
+
+- **Picks:** every pick in [Summary of picks](#summary-of-picks) (D1–D10) is accepted as written.
+- **Delivery plan:** milestones M1–M10 are adopted as the delivery plan.
+- **Open questions:** questions 1–13 stay open. None of them blocks M1, and each answer will be recorded in this doc as it comes in. The most pressing are:
+  - Q1: D-pad advancing
+  - Q2: fleet and MDM
+  - Q3: CDN specifics
+  - Q10: tenancy
+  - Q11: security timing
+- **Handed off to the admin portal design (#2):** Q3 (CDN specifics) and the [Interface with the admin portal](#interface-with-the-admin-portal) contract. That design owns them from here.
+- **Rules hardening** (admin/operator claims, Flutter operator login, device-scoped reads) is tracked as its own issue and isn't part of this design's milestones.
