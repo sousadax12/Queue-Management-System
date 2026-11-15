@@ -16,18 +16,18 @@ A change here is a contract change: the portal CI (`admin-portal.yml`) and the T
 
 One file per collection, plus the legacy queues:
 
-| File                  | Collection                       | Notes                                                              |
-| --------------------- | -------------------------------- | ------------------------------------------------------------------ |
-| `orgs.json`           | `orgs/{orgId}`                   | Portal-only (C10).                                                 |
-| `sites.json`          | `sites/{siteId}`                 |                                                                    |
-| `screens.json`        | `sites/{siteId}/screens/{id}`    | One screen per template.                                           |
-| `queues.json`         | `queues/{queueId}`               | As the portal writes them: every legacy field + `orgId`/`siteId`.  |
-| `queues.legacy.json`  | `queues/{queueId}`               | Flutter-era docs before the backfill. Valid for readers only.      |
-| `playlists.json`      | `playlists/{playlistId}`         | One org-wide (`siteId: null`), one site playlist.                  |
-| `media.json`          | `media/{mediaId}`                | Portal-only. `ready`, `processing` and `failed` (C1).              |
-| `devices.json`        | `devices/{uid}`                  | Claimed with a screen, claimed on the default screen, unclaimed.   |
-| `pairingCodes.json`   | `pairingCodes/{code}`            | The unclaimed box's code, `K7M3QX`.                                |
-| `users.json`          | `users/{uid}`                    | Portal-only. Platform admin, two org admins, one operator.         |
+| File                 | Collection                    | Notes                                                             |
+| -------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| `orgs.json`          | `orgs/{orgId}`                | Portal-only (C10).                                                |
+| `sites.json`         | `sites/{siteId}`              |                                                                   |
+| `screens.json`       | `sites/{siteId}/screens/{id}` | One screen per template.                                          |
+| `queues.json`        | `queues/{queueId}`            | As the portal writes them: every legacy field + `orgId`/`siteId`. |
+| `queues.legacy.json` | `queues/{queueId}`            | Flutter-era docs before the backfill. Valid for readers only.     |
+| `playlists.json`     | `playlists/{playlistId}`      | One org-wide (`siteId: null`), one site playlist.                 |
+| `media.json`         | `media/{mediaId}`             | Portal-only. `ready`, `processing` and `failed` (C1).             |
+| `devices.json`       | `devices/{uid}`               | Claimed with a screen, claimed on the default screen, unclaimed.  |
+| `pairingCodes.json`  | `pairingCodes/{code}`         | The unclaimed box's code, `K7M3QX`.                               |
+| `users.json`         | `users/{uid}`                 | Portal-only. Platform admin, two org admins, one operator.        |
 
 Each file is a JSON object keyed by the **full document path**:
 
@@ -94,10 +94,10 @@ documents never use `__` keys.
 There are **two orgs**, so isolation is testable. Ids are globally unique and carry a readable
 prefix (C10).
 
-| Org                                  | Site                               | Screens (template)                                                         | Queues                                   | Playlist                         | Boxes                                         |
-| ------------------------------------ | ---------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------- | -------------------------------- | --------------------------------------------- |
-| `org_lojas_7Hq2` "Lojas Exemplo"     | `site_porto_3fKq` "Loja Porto Centro" | `scr_lobby_left_Q2mz` (`queues_media`), `scr_lobby_right_Vb8n` (`fullscreen_media`) | `q_balcao_a_P4tc`, `q_balcao_b_Lr6w`     | `pl_promo_nov_Zx81` (org-wide)   | `tvPortoLeft01uidAAAAAAAAAA` on the left screen |
-| `org_clinica_K9xP` "Clínica Exemplo" | `site_lisboa_Wd2e` "Clínica Lisboa"   | `scr_waiting_Hn5r` (`queues_only`, all queues), `scr_reception_Tj3u` (`media_ticker_clock`) | `q_consultas_Ma9v`, `q_analises_Ce7y`    | `pl_saude_Rk42` (site)           | `tvLisboa01uidBBBBBBBBBBBBB`, `screenId: null` (default screen) |
+| Org                                  | Site                                  | Screens (template)                                                                          | Queues                                | Playlist                       | Boxes                                                           |
+| ------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------ | --------------------------------------------------------------- |
+| `org_lojas_7Hq2` "Lojas Exemplo"     | `site_porto_3fKq` "Loja Porto Centro" | `scr_lobby_left_Q2mz` (`queues_media`), `scr_lobby_right_Vb8n` (`fullscreen_media`)         | `q_balcao_a_P4tc`, `q_balcao_b_Lr6w`  | `pl_promo_nov_Zx81` (org-wide) | `tvPortoLeft01uidAAAAAAAAAA` on the left screen                 |
+| `org_clinica_K9xP` "Clínica Exemplo" | `site_lisboa_Wd2e` "Clínica Lisboa"   | `scr_waiting_Hn5r` (`queues_only`, all queues), `scr_reception_Tj3u` (`media_ticker_clock`) | `q_consultas_Ma9v`, `q_analises_Ce7y` | `pl_saude_Rk42` (site)         | `tvLisboa01uidBBBBBBBBBBBBB`, `screenId: null` (default screen) |
 
 There is also one **unclaimed** box, `tvUnclaimed01uidCCCCCCCCCC`, with pairing code `K7M3QX`.
 
@@ -108,11 +108,11 @@ size, `codecs` and dimensions were measured from the served bytes on 2026-11-15.
 verifies `sha256` after download, so if a host ever changes the bytes the TV will reject the
 file. In that case, re-measure the file and update the fixture.
 
-| Media                         | URL                                                                                                   | Notes                                     |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Big Buck Bunny 10 s           | `https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4`            | H.264 High 4.2, 1920×1080, 60 fps, no audio, faststart |
-| Jellyfish 10 s                | `https://test-videos.co.uk/vids/jellyfish/mp4/h264/1080/Jellyfish_1080_10s_1MB.mp4`                    | H.264 High 4.2, 1920×1080, 29.97 fps, no audio, faststart |
-| Fronalpstock (both orgs)      | `https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1920px-Fronalpstock_big.jpg` | JPEG 1920×863. One object shared by two orgs, which is the cross-org dedupe case |
+| Media                    | URL                                                                                                          | Notes                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Big Buck Bunny 10 s      | `https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4`                  | H.264 High 4.2, 1920×1080, 60 fps, no audio, faststart                           |
+| Jellyfish 10 s           | `https://test-videos.co.uk/vids/jellyfish/mp4/h264/1080/Jellyfish_1080_10s_1MB.mp4`                          | H.264 High 4.2, 1920×1080, 29.97 fps, no audio, faststart                        |
+| Fronalpstock (both orgs) | `https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1920px-Fronalpstock_big.jpg` | JPEG 1920×863. One object shared by two orgs, which is the cross-org dedupe case |
 
 To re-measure, run `curl -sL <url> | shasum -a 256` and
 `ffprobe -show_entries stream=profile,level,width,height <url>`.

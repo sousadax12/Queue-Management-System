@@ -3,10 +3,10 @@
 This pnpm workspace holds the web admin portal for the Queue Management System. The design is in
 [`docs/design/2026-11-15-admin-portal.md`](../docs/design/2026-11-15-admin-portal.md).
 
-| Package                                    | What                                                                                                                                   |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/contract`](packages/contract)   | The Firestore contract shared with the Android TV app: zod schemas and TS types, golden fixtures, the seed and claim script, and the queue backfill. |
-| `apps/web`, `apps/media-api`               | Later milestones (A2, A4).                                                                                                             |
+| Package                                  | What                                                                                                                                                 |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/contract`](packages/contract) | The Firestore contract shared with the Android TV app: zod schemas and TS types, golden fixtures, the seed and claim script, and the queue backfill. |
+| `apps/web`, `apps/media-api`             | Later milestones (A2, A4).                                                                                                                           |
 
 ## Setup
 

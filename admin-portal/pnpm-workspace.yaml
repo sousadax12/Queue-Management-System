@@ -7,3 +7,6 @@ allowBuilds:
   esbuild: true
   '@firebase/util': false
   protobufjs: false
+  # Optional dep of superstatic (Hosting emulator), which falls back without it.
+  # We only run the Firestore emulator, so skip the native build.
+  re2: false
