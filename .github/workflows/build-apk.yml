@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'android-tv/**'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - 'android-tv/**'
+      - 'docs/**'
 
 jobs:
   build:

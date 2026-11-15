@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder adaptive icon foreground (108dp canvas, 72dp safe zone). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FF8AB4F8"
+        android:pathData="M34,38h10v8h-10zM34,50h10v8h-10zM34,62h10v8h-10z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M48,38h26v8h-26zM48,50h20v8h-20zM48,62h14v8h-14z" />
+</vector>
