@@ -1,0 +1,64 @@
+{
+  "queues/q_balcao_a_P4tc": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": "site_porto_3fKq",
+    "name": "Balcão A",
+    "number": 42,
+    "icon": 61713,
+    "backgroundColor": 4282339765,
+    "videoURL": "",
+    "videoVolume": 0,
+    "soundVolume": 1,
+    "velocity": 60,
+    "foregroundColor": 4294967295,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "queues/q_balcao_b_Lr6w": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": "site_porto_3fKq",
+    "name": "Balcão B",
+    "number": 7,
+    "icon": 61562,
+    "backgroundColor": 4294198070,
+    "videoURL": "",
+    "videoVolume": 0,
+    "soundVolume": 1,
+    "velocity": 60,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "queues/q_consultas_Ma9v": {
+    "orgId": "org_clinica_K9xP",
+    "siteId": "site_lisboa_Wd2e",
+    "name": "Consultas",
+    "number": 0,
+    "icon": 61680,
+    "backgroundColor": 4278228616,
+    "videoURL": "",
+    "videoVolume": 0,
+    "soundVolume": 1,
+    "velocity": 60,
+    "foregroundColor": 4278190080
+  },
+  "queues/q_analises_Ce7y": {
+    "orgId": "org_clinica_K9xP",
+    "siteId": "site_lisboa_Wd2e",
+    "name": "Análises",
+    "number": 99,
+    "icon": 61635,
+    "backgroundColor": 4294940672,
+    "videoURL": "",
+    "videoVolume": 0,
+    "soundVolume": 1,
+    "velocity": 60,
+    "updatedAt": {
+      "__sentinel": "serverTimestamp"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  }
+}

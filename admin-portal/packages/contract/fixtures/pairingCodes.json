@@ -1,0 +1,11 @@
+{
+  "pairingCodes/K7M3QX": {
+    "uid": "tvUnclaimed01uidCCCCCCCCCC",
+    "createdAt": {
+      "__sentinel": "serverTimestamp"
+    },
+    "expiresAt": {
+      "__ts": "2026-11-15T11:00:00Z"
+    }
+  }
+}

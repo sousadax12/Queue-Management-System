@@ -1,0 +1,28 @@
+{
+  "queues/legacy_balcao_1": {
+    "number": 12,
+    "icon": 61713,
+    "name": "Balcão 1",
+    "backgroundColor": 4294198070,
+    "videoURL": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+    "videoVolume": 1,
+    "soundVolume": 1,
+    "velocity": 50
+  },
+  "queues/legacy_balcao_2": {
+    "number": 0,
+    "icon": 62003,
+    "name": "Balcão 2",
+    "backgroundColor": 4278190080,
+    "videoURL": "",
+    "videoVolume": 0,
+    "soundVolume": 0,
+    "velocity": 100
+  },
+  "queues/legacy_manual_3": {
+    "number": 5,
+    "name": "Senhas (criada à mão)",
+    "backgroundColor": 4283215696,
+    "soundVolume": 0.5
+  }
+}

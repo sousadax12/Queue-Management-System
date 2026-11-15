@@ -1,0 +1,23 @@
+{
+  "orgs/org_lojas_7Hq2": {
+    "name": "Lojas Exemplo",
+    "status": "active",
+    "createdAt": {
+      "__ts": "2026-11-01T08:00:00Z"
+    },
+    "maxSites": 10,
+    "maxDevices": 50,
+    "maxMediaBytes": 21474836480,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_platform_admin_P0wd"
+  },
+  "orgs/org_clinica_K9xP": {
+    "name": "Clínica Exemplo",
+    "status": "active",
+    "createdAt": {
+      "__sentinel": "serverTimestamp"
+    }
+  }
+}

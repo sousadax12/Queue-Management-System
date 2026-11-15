@@ -1,0 +1,187 @@
+{
+  "media/md_bunny_8f2c": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": null,
+    "name": "Big Buck Bunny 10s",
+    "type": "video",
+    "renditions": [
+      {
+        "url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4",
+        "sha256": "38d763af0161e28145e6300d9a5b3b1e4a387ed8f6c4ba7ac1a5f2948d8fac51",
+        "sizeBytes": 1046987,
+        "mimeType": "video/mp4",
+        "codecs": "avc1.64002a",
+        "width": 1920,
+        "height": 1080
+      }
+    ],
+    "durationMs": 10000,
+    "sizeBytes": 1046987,
+    "tags": ["promo"],
+    "uploadedBy": "uid_lojas_admin_x81k",
+    "createdAt": {
+      "__ts": "2026-11-10T14:00:00Z"
+    },
+    "status": "ready",
+    "error": null,
+    "source": {
+      "fileName": "bunny.mp4",
+      "sizeBytes": 1046987,
+      "mimeType": "video/mp4",
+      "probe": {
+        "video": "h264 High 4.2 1920x1080 60fps",
+        "audio": null
+      }
+    },
+    "posterUrl": "https://cdn.example.com/p/38d763af0161e28145e6300d9a5b3b1e4a387ed8f6c4ba7ac1a5f2948d8fac51.jpg",
+    "processingAt": null
+  },
+  "media/md_alps_19ab": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": null,
+    "name": "Fronalpstock",
+    "type": "image",
+    "renditions": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1920px-Fronalpstock_big.jpg",
+        "sha256": "166807a3de2d35931156b56e05db36664d49d85e956b09943d16bc9bffa05964",
+        "sizeBytes": 460422,
+        "mimeType": "image/jpeg",
+        "width": 1920,
+        "height": 863
+      }
+    ],
+    "durationMs": null,
+    "sizeBytes": 460422,
+    "tags": [],
+    "uploadedBy": "uid_lojas_admin_x81k",
+    "createdAt": {
+      "__ts": "2026-11-10T14:00:00Z"
+    },
+    "status": "ready",
+    "error": null,
+    "source": {
+      "fileName": "alps.jpg",
+      "sizeBytes": 512000,
+      "mimeType": "image/jpeg"
+    },
+    "posterUrl": null,
+    "processingAt": null
+  },
+  "media/md_upload_9d1e": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": "site_porto_3fKq",
+    "name": "Vídeo do Natal",
+    "type": "video",
+    "renditions": [],
+    "durationMs": null,
+    "sizeBytes": 0,
+    "tags": [],
+    "uploadedBy": "uid_lojas_admin_x81k",
+    "createdAt": {
+      "__ts": "2026-11-10T14:00:00Z"
+    },
+    "status": "processing",
+    "error": null,
+    "source": {
+      "fileName": "natal.mov",
+      "sizeBytes": 734003200,
+      "mimeType": "video/quicktime"
+    },
+    "posterUrl": null,
+    "processingAt": {
+      "__ts": "2026-11-15T09:59:00.250Z"
+    }
+  },
+  "media/md_hevc_4b7a": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": null,
+    "name": "Telemóvel HEVC",
+    "type": "video",
+    "renditions": [],
+    "durationMs": null,
+    "sizeBytes": 0,
+    "tags": [],
+    "uploadedBy": "uid_lojas_admin_x81k",
+    "createdAt": {
+      "__ts": "2026-11-10T14:00:00Z"
+    },
+    "status": "failed",
+    "error": "HEVC 10-bit; needs H.264 8-bit <= 1080p",
+    "source": {
+      "fileName": "IMG_0042.MOV",
+      "sizeBytes": 91226112,
+      "mimeType": "video/quicktime",
+      "probe": {
+        "video": "hevc Main 10 3840x2160"
+      }
+    },
+    "posterUrl": null,
+    "processingAt": null
+  },
+  "media/md_jellyfish_3762": {
+    "orgId": "org_clinica_K9xP",
+    "siteId": "site_lisboa_Wd2e",
+    "name": "Jellyfish 10s",
+    "type": "video",
+    "renditions": [
+      {
+        "url": "https://test-videos.co.uk/vids/jellyfish/mp4/h264/1080/Jellyfish_1080_10s_1MB.mp4",
+        "sha256": "3762782efe41aa95912ac91dd04433942a3bd96f71f30e8d430aaaf8e9a0bd12",
+        "sizeBytes": 1048435,
+        "mimeType": "video/mp4",
+        "codecs": "avc1.64002a",
+        "width": 1920,
+        "height": 1080
+      }
+    ],
+    "durationMs": 10010,
+    "sizeBytes": 1048435,
+    "tags": [],
+    "uploadedBy": "uid_clinica_admin_m2Qe",
+    "createdAt": {
+      "__ts": "2026-11-10T14:00:00Z"
+    },
+    "status": "ready",
+    "error": null,
+    "source": {
+      "fileName": "jellyfish.mp4",
+      "sizeBytes": 1048435,
+      "mimeType": "video/mp4"
+    },
+    "posterUrl": null,
+    "processingAt": null
+  },
+  "media/md_alps_5c0d": {
+    "orgId": "org_clinica_K9xP",
+    "siteId": null,
+    "name": "Montanhas",
+    "type": "image",
+    "renditions": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1920px-Fronalpstock_big.jpg",
+        "sha256": "166807a3de2d35931156b56e05db36664d49d85e956b09943d16bc9bffa05964",
+        "sizeBytes": 460422,
+        "mimeType": "image/jpeg",
+        "width": 1920,
+        "height": 863
+      }
+    ],
+    "durationMs": null,
+    "sizeBytes": 460422,
+    "tags": ["natureza", "calmo"],
+    "uploadedBy": "uid_clinica_admin_m2Qe",
+    "createdAt": {
+      "__ts": "2026-11-10T14:00:00Z"
+    },
+    "status": "ready",
+    "error": null,
+    "source": {
+      "fileName": "montanhas.jpg",
+      "sizeBytes": 460422,
+      "mimeType": "image/jpeg"
+    },
+    "posterUrl": null,
+    "processingAt": null
+  }
+}

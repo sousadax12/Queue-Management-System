@@ -1,0 +1,87 @@
+{
+  "sites/site_porto_3fKq/screens/scr_lobby_left_Q2mz": {
+    "orgId": "org_lojas_7Hq2",
+    "name": "Lobby left",
+    "template": "queues_media",
+    "zones": {
+      "queues": {
+        "queueIds": ["q_balcao_a_P4tc", "q_balcao_b_Lr6w"],
+        "chime": true
+      },
+      "media": {
+        "playlistId": "pl_promo_nov_Zx81",
+        "volume": 0.3
+      },
+      "ticker": {
+        "enabled": true
+      },
+      "clock": {
+        "pattern": "HH:mm",
+        "showDate": false
+      }
+    },
+    "maxVideoHeight": 1080,
+    "safeAreaPercent": 0,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "sites/site_porto_3fKq/screens/scr_lobby_right_Vb8n": {
+    "orgId": "org_lojas_7Hq2",
+    "name": "Lobby right",
+    "template": "fullscreen_media",
+    "zones": {
+      "media": {
+        "playlistId": "pl_promo_nov_Zx81",
+        "volume": 0
+      }
+    },
+    "maxVideoHeight": 720,
+    "safeAreaPercent": 3,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "sites/site_lisboa_Wd2e/screens/scr_waiting_Hn5r": {
+    "orgId": "org_clinica_K9xP",
+    "name": "Sala de espera",
+    "template": "queues_only",
+    "zones": {
+      "queues": {
+        "chime": true
+      }
+    },
+    "maxVideoHeight": 1080,
+    "safeAreaPercent": 0,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  },
+  "sites/site_lisboa_Wd2e/screens/scr_reception_Tj3u": {
+    "orgId": "org_clinica_K9xP",
+    "name": "Receção",
+    "template": "media_ticker_clock",
+    "zones": {
+      "media": {
+        "playlistId": "pl_saude_Rk42",
+        "volume": 1
+      },
+      "ticker": {
+        "enabled": false
+      },
+      "clock": {
+        "pattern": "HH:mm",
+        "showDate": true
+      }
+    },
+    "maxVideoHeight": 1080,
+    "safeAreaPercent": 0,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  }
+}
