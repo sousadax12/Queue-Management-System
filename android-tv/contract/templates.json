@@ -1,0 +1,6 @@
+[
+  { "id": "queues_media", "minVersionCode": 1, "zones": ["queues", "media", "ticker", "clock"] },
+  { "id": "fullscreen_media", "minVersionCode": 1, "zones": ["media"] },
+  { "id": "media_ticker_clock", "minVersionCode": 1, "zones": ["media", "ticker", "clock"] },
+  { "id": "queues_only", "minVersionCode": 1, "zones": ["queues"] }
+]
