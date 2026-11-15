@@ -1,0 +1,76 @@
+name: Admin portal
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'admin-portal/**'
+      - 'android-tv/contract/**'
+      - '.github/workflows/admin-portal.yml'
+  pull_request:
+    paths:
+      - 'admin-portal/**'
+      - 'android-tv/contract/**'
+      - '.github/workflows/admin-portal.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-portal-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: admin-portal
+
+jobs:
+  check:
+    name: Typecheck, lint and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: admin-portal/package.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: admin-portal/.nvmrc
+          cache: pnpm
+          cache-dependency-path: admin-portal/pnpm-lock.yaml
+
+      - name: Set up Java (Firestore emulator)
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Firebase emulators
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('admin-portal/pnpm-lock.yaml') }}
+          restore-keys: firebase-emulators-${{ runner.os }}-
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm -r test
+
+      - name: Emulator tests
+        run: pnpm -r test:emulator
