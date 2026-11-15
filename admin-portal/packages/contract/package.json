@@ -1,0 +1,30 @@
+{
+  "name": "@qms/contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firestore contract shared by the admin portal and the Android TV app: zod schemas, golden fixtures, seed and backfill scripts.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/admin/index.ts",
+    "./fixtures": "./src/fixtures.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint . && prettier --check .",
+    "test": "vitest run",
+    "test:emulator": "firebase --config ../../firebase.json emulators:exec --only firestore --project demo-qms \"vitest run --config vitest.emulator.config.ts\"",
+    "seed": "tsx scripts/seed.ts",
+    "backfill:queues": "tsx scripts/backfill-queues.ts"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "qms-admin-portal",
+  "private": true,
+  "description": "Web admin portal workspace for the Queue Management System (contract package, later the web app and media-api).",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": "11.25.0"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint && eslint eslint.config.js && prettier --check \"*.{json,yaml,md}\"",
+    "format": "prettier --write .",
+    "test": "pnpm -r test",
+    "test:emulator": "pnpm -r test:emulator",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:emulator",
+    "seed": "pnpm --filter @qms/contract seed",
+    "backfill:queues": "pnpm --filter @qms/contract backfill:queues"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "firebase-tools": "^15.36.0",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}
