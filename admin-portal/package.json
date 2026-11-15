@@ -16,11 +16,13 @@
     "test:emulator": "pnpm -r test:emulator",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:emulator",
     "seed": "pnpm --filter @qms/contract seed",
-    "backfill:queues": "pnpm --filter @qms/contract backfill:queues"
+    "backfill:queues": "pnpm --filter @qms/contract backfill:queues",
+    "grant-platform-admin": "pnpm --filter @qms/contract grant-platform-admin"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "firebase-tools": "^15.36.0",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",

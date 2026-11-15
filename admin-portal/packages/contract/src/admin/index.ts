@@ -3,3 +3,4 @@ export * from './connect.js';
 export * from './claim.js';
 export * from './seed.js';
 export * from './backfill.js';
+export * from './grant.js';

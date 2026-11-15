@@ -6,7 +6,8 @@ This pnpm workspace holds the web admin portal for the Queue Management System. 
 | Package                                  | What                                                                                                                                                 |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`packages/contract`](packages/contract) | The Firestore contract shared with the Android TV app: zod schemas and TS types, golden fixtures, the seed and claim script, and the queue backfill. |
-| `apps/web`, `apps/media-api`             | Later milestones (A2, A4).                                                                                                                           |
+| [`apps/web`](apps/web)                   | The portal: Vite + React + TypeScript, TanStack Router, Mantine, Firebase Auth (Google + email/password), role-gated routes.                         |
+| `apps/media-api`                         | Later milestone (A4).                                                                                                                                |
 
 ## Setup
 
@@ -30,14 +31,54 @@ pnpm install
 pnpm typecheck        # tsc in every package
 pnpm lint             # ESLint + Prettier
 pnpm test             # unit tests: schemas, fixtures, encoding, claim logic, templates.json
-pnpm test:emulator    # seed, claim and backfill against a throwaway Firestore emulator
+pnpm test:emulator    # seed, claim, backfill, grant and web sign-in against throwaway emulators
 pnpm check            # all of the above
 ```
 
-- `pnpm test:emulator` runs `firebase emulators:exec --only firestore --project demo-qms`.
+- `pnpm test:emulator` runs `firebase emulators:exec --only auth,firestore --project demo-qms`.
   It starts the emulator, runs the tests and stops it.
 - `demo-` project ids only exist in the emulator, so these tests can't touch a real project.
 - The first run downloads the emulator jar into `~/.cache/firebase/emulators`.
+
+## Run the portal
+
+Against the emulators (no Firebase project needed):
+
+```bash
+pnpm --filter @qms/web dev:emulator   # Auth + Firestore emulators, Vite on http://localhost:5173
+```
+
+Create an account on the sign-in page. The emulator prints the verification "email" in its log:
+open the link, then press **I've verified**. You land on **No access**. Grant yourself the role
+from another terminal, then press **Check again**:
+
+```bash
+pnpm grant-platform-admin --email you@example.com
+```
+
+Against a real project, copy [`apps/web/.env.example`](apps/web/.env.example) to
+`apps/web/.env.local`, fill in the web config, and run `pnpm --filter @qms/web dev`. Enable
+**Google** and **Email/Password** sign-in in the Firebase console, and add the portal's domain to
+**Authentication > Settings > Authorized domains**.
+
+## Deploy
+
+CI ([`admin-portal.yml`](../.github/workflows/admin-portal.yml)) builds
+[`apps/web/Dockerfile`](apps/web/Dockerfile) on every run: the static build behind unprivileged
+nginx on port 8080, with SPA fallback and `/healthz`. On `main` it pushes
+`ghcr.io/<owner>/qms-admin-web:latest` (and `:sha-<commit>`), then calls the Coolify deploy webhook.
+
+The image is the same for every environment. It reads its config at start from the `VITE_*`
+env vars listed in [`.env.example`](apps/web/.env.example), so set them in the Coolify app.
+
+One-time setup:
+
+1. In Coolify, create an application of type **Docker image** from
+   `ghcr.io/<owner>/qms-admin-web:latest`, port 8080, health check `/healthz`, and the `VITE_*`
+   env vars. Give it registry credentials for GHCR, or make the package public.
+2. In GitHub, add the repository secrets `COOLIFY_WEBHOOK` (the app's deploy webhook URL) and
+   `COOLIFY_TOKEN` (a Coolify API token with deploy rights). Without `COOLIFY_WEBHOOK` the deploy
+   job skips, so CI stays green.
 
 ## Seed the emulator
 
@@ -132,6 +173,25 @@ Options:
 - `--production` is required on top of `--project santos-1b6f6`.
 
 The report also lists legacy fields that each queue is missing, which make the Flutter mapper throw.
+
+## Grant the first platform admin
+
+Roles are custom claims (`role`, `org`, `sites`), mirrored into `users/{uid}`. Until `media-api`
+(A4) manages roles, this one-off script makes an existing user a platform admin. The user must
+have signed in to the portal once, so their Auth account exists.
+
+```bash
+pnpm grant-platform-admin --email you@example.com                     # Auth + Firestore emulators
+FIREBASE_SERVICE_ACCOUNT="$(cat ~/keys/sa.json)" \
+  pnpm grant-platform-admin --email you@example.com --project <id>   # a real project
+```
+
+- `--uid <uid>` instead of `--email` looks the user up by uid.
+- Credentials: the service account JSON in `FIREBASE_SERVICE_ACCOUNT`, or a key file path in
+  `GOOGLE_APPLICATION_CREDENTIALS`.
+- The production project (`santos-1b6f6`) also needs `--production`.
+- The script keeps the user's other claims and is idempotent. The user picks up the role on
+  their next token refresh: **Check again** on the portal's "no access" page.
 
 ## Contract rules of thumb
 
