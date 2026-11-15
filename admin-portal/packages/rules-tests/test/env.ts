@@ -39,6 +39,10 @@ const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST;
 if (!EMULATOR_HOST) {
   throw new Error('Run the rules tests with `pnpm test:emulator` (firebase emulators:exec).');
 }
+const EMULATOR = {
+  host: EMULATOR_HOST.slice(0, EMULATOR_HOST.lastIndexOf(':')),
+  port: Number(EMULATOR_HOST.slice(EMULATOR_HOST.lastIndexOf(':') + 1)),
+};
 
 // ---------------------------------------------------------------- the data set (fixtures)
 
@@ -202,8 +206,7 @@ export async function createRulesEnv(): Promise<RulesEnv> {
     // Connect directly rather than through the emulator hub: other workspace packages run
     // their own emulators in parallel (`pnpm -r test:emulator`).
     firestore: {
-      host: EMULATOR_HOST.slice(0, EMULATOR_HOST.lastIndexOf(':')),
-      port: Number(EMULATOR_HOST.slice(EMULATOR_HOST.lastIndexOf(':') + 1)),
+      ...EMULATOR,
       rules: readFileSync(RULES_PATH, 'utf8'),
     },
   });
