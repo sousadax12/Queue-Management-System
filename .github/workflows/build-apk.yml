@@ -33,6 +33,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # Pinned so a new stable release can't silently break the build.
+          # Bump together with the Gradle/AGP/Kotlin versions in android/.
+          flutter-version: '3.50.0'
           cache: true
 
       - name: Install dependencies
