@@ -4,7 +4,7 @@ Refs #2
 
 ## Status
 
-**Proposed (2026-11-15).** Builds on the accepted Android TV design (#1, PR #3: `docs/design/2026-11-15-android-tv-display.md` on branch `orch/design-1-android-tv-display`). That doc is called "the TV design" below. Rules hardening (#6) takes its auth and role model from this doc.
+**Accepted (2026-11-15)**. See [Decision](#decision). Builds on the accepted Android TV design (#1, PR #3: `docs/design/2026-11-15-android-tv-display.md` on branch `orch/design-1-android-tv-display`). That doc is called "the TV design" below. Rules hardening (#6) takes its auth and role model from this doc.
 
 **Revision 2 (2026-11-15).** The owner answered the open questions (see [Answered](#answered-2026-11-15)). The changes that follow from them:
 
@@ -470,4 +470,22 @@ Each milestone is one PR. Milestones marked ⇢ unblock TV milestones from the T
 
 ## Decision
 
-<!-- Left empty until a decision is made. -->
+**Accepted on 2026-11-15.**
+
+- **Picks:** every pick in [Summary of picks](#summary-of-picks) is accepted as amended by revision 2:
+  - P1: Vite + React + TypeScript
+  - P2: Coolify
+  - P3: Cloudflare R2
+  - P4: `media-api` on Coolify, with transcoding before the pilot
+  - P5: custom claims with orgs (`platformAdmin`, `orgAdmin`, `manager`, `operator`)
+  - P6: schematic preview
+  - P7: `admin-portal/` pnpm workspace
+  - The portal takes over queue advancing after the pilot.
+- **Multi-org model:** several customers share one Firebase project. Each has its own org admins.
+- **Contract feedback:** C1–C10 are accepted. They must be written into the TV design doc before TV M2 freezes its mappers.
+- **Delivery plan:** milestones A1–A11 are adopted.
+- **Rules hardening (#6):** takes the [Rules shape](#rules-shape-input-to-6) and the role model from this doc. It must land before the portal holds real customer data or any box goes into a public space.
+- **Open questions:** the six under [Still open](#still-open) stay open. None of them blocks A1–A3. The first answers needed:
+  - domain names (before A2 deploys)
+  - who creates sites (before A6)
+  - upload limits (before A7)
