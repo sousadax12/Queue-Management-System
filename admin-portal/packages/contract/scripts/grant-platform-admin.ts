@@ -42,7 +42,13 @@ async function main(): Promise<number> {
     return 2;
   }
   const target = resolveTarget({ project: values.project, allowProduction: values.production });
-  console.log(`Target: ${describeTarget(target)}`);
+  console.log(
+    `Target: ${
+      target.kind === 'emulator'
+        ? `Auth + Firestore emulators (project ${target.projectId})`
+        : describeTarget(target)
+    }`,
+  );
   const { db, auth, close } = connect(target);
   try {
     const r = await grantPlatformAdmin(auth, db, {
