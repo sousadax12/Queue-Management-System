@@ -32,7 +32,7 @@ From this directory:
 ./gradlew lint testDebugUnitTest assembleDebug
 ```
 
-From the repo root, add `-p android-tv`. That is what CI runs (`.github/workflows/android-tv.yml`).
+CI runs the same command from this directory (`.github/workflows/android-tv.yml`). From the repo root, use `android-tv/gradlew -p android-tv ...`.
 
 - `:domain` tests run on the JUnit Platform. `testDebugUnitTest` is an alias for its `test` task.
 - `:app` and `:ui` tests run on Robolectric (Android SDK 35).

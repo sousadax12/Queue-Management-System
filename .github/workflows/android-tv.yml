@@ -39,7 +39,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Lint, unit tests and debug APK
-        run: ./gradlew -p android-tv lint testDebugUnitTest assembleDebug
+        working-directory: android-tv
+        run: ./gradlew lint testDebugUnitTest assembleDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
