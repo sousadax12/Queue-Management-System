@@ -1,13 +1,16 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
-import 'package:queue_management_system/models/queue_model.dart';
+import 'package:queue_management_system/auth/operator_scope.dart';
 
+/// The signed-in operator's scope (null when signed out).
 class UserProvider extends ChangeNotifier {
+  UserProvider([this._scope]);
 
-  late UserCredential _userCredential;
+  OperatorScope? _scope;
 
-  set userCredential(UserCredential value) {
-    _userCredential = value;
+  OperatorScope? get scope => _scope;
+
+  set scope(OperatorScope? value) {
+    _scope = value;
     notifyListeners();
   }
 }

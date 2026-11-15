@@ -1,0 +1,130 @@
+name: Firestore rules
+
+# Tests the root firestore.rules against the emulator (admin-portal/packages/rules-tests) and,
+# on main, deploys them. The deploy only runs when the FIREBASE_SERVICE_ACCOUNT secret is set,
+# so the workflow stays green without it. Add the secret only once the Flutter operator login
+# has shipped and existing queues are backfilled (see the PR for #6): deploying these rules
+# locks out app builds that still sign in anonymously.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'admin-portal/packages/rules-tests/**'
+      - 'admin-portal/packages/contract/**'
+      - 'admin-portal/pnpm-lock.yaml'
+      - '.github/workflows/firestore-rules.yml'
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'admin-portal/packages/rules-tests/**'
+      - 'admin-portal/packages/contract/**'
+      - 'admin-portal/pnpm-lock.yaml'
+      - '.github/workflows/firestore-rules.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firestore-rules-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Rules tests (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: admin-portal
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: admin-portal/package.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: admin-portal/.nvmrc
+          cache: pnpm
+          cache-dependency-path: admin-portal/pnpm-lock.yaml
+
+      - name: Set up Java (Firestore emulator)
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Firebase emulators
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('admin-portal/pnpm-lock.yaml') }}
+          restore-keys: firebase-emulators-${{ runner.os }}-
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Rules tests
+        run: pnpm --filter @qms/rules-tests test:emulator
+
+  deploy:
+    name: Deploy rules
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: firestore-rules-deploy
+      cancel-in-progress: false
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      # The Flutter app's project (lib/firebase_options.dart); override with a repo variable.
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'santos-1b6f6' }}
+
+    steps:
+      - name: Skip without a deploy credential
+        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        run: echo "::notice::FIREBASE_SERVICE_ACCOUNT is not set; rules were tested but not deployed."
+
+      - name: Checkout code
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: admin-portal/package.json
+
+      - name: Set up Node
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: admin-portal/.nvmrc
+          cache: pnpm
+          cache-dependency-path: admin-portal/pnpm-lock.yaml
+
+      - name: Install
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        working-directory: admin-portal
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy firestore.rules
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          admin-portal/node_modules/.bin/firebase deploy --only firestore:rules \
+            --project "$FIREBASE_PROJECT_ID" --non-interactive
+          rm -f "$RUNNER_TEMP/firebase-sa.json"

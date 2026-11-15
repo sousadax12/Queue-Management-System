@@ -5,10 +5,10 @@ import 'package:intl/intl.dart';
 class CurrentDateWidget extends StatefulWidget {
   final Color fontColor;
 
-  CurrentDateWidget({required this.fontColor});
+  const CurrentDateWidget({super.key, required this.fontColor});
 
   @override
-  _CurrentDateWidgetState createState() => _CurrentDateWidgetState();
+  State<CurrentDateWidget> createState() => _CurrentDateWidgetState();
 }
 
 class _CurrentDateWidgetState extends State<CurrentDateWidget>
@@ -19,7 +19,7 @@ class _CurrentDateWidgetState extends State<CurrentDateWidget>
   @override
   void initState() {
     super.initState();
-    _ticker = this.createTicker((_) => _updateTime());
+    _ticker = createTicker((_) => _updateTime());
     _ticker.start();
     _formattedTime = _getFormattedTime();
   }
@@ -44,10 +44,6 @@ class _CurrentDateWidgetState extends State<CurrentDateWidget>
 
   @override
   Widget build(BuildContext context) {
-    var now = DateTime.now();
-    var formatter = DateFormat('MMMM d');
-    var formattedDate = formatter.format(now);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [

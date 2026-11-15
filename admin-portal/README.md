@@ -3,11 +3,12 @@
 This pnpm workspace holds the web admin portal for the Queue Management System. The design is in
 [`docs/design/2026-11-15-admin-portal.md`](../docs/design/2026-11-15-admin-portal.md).
 
-| Package                                  | What                                                                                                                                                 |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/contract`](packages/contract) | The Firestore contract shared with the Android TV app: zod schemas and TS types, golden fixtures, the seed and claim script, and the queue backfill. |
-| [`apps/web`](apps/web)                   | The portal: Vite + React + TypeScript, TanStack Router, Mantine, Firebase Auth (Google + email/password), role-gated routes.                         |
-| `apps/media-api`                         | Later milestone (A4).                                                                                                                                |
+| Package                                        | What                                                                                                                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/contract`](packages/contract)       | The Firestore contract shared with the Android TV app: zod schemas and TS types, golden fixtures, the seed and claim script, and the queue backfill. |
+| [`apps/web`](apps/web)                         | The portal: Vite + React + TypeScript, TanStack Router, Mantine, Firebase Auth (Google + email/password), role-gated routes.                         |
+| [`packages/rules-tests`](packages/rules-tests) | Emulator tests for the root [`firestore.rules`](../firestore.rules): every role, TV devices, and cross-org denial (A3).                              |
+| `apps/media-api`                               | Later milestone (A4).                                                                                                                                |
 
 ## Setup
 

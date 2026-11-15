@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:queue_management_system/mappers/queue_doc_mapper.dart';
 import 'package:queue_management_system/models/queue_model.dart';
 import 'package:queue_management_system/providers/queues_provider.dart';
+import 'package:queue_management_system/providers/user_provider.dart';
 import 'package:queue_management_system/widgets/current_date_widget.dart';
 import 'package:queue_management_system/widgets/queue_widget.dart';
 import 'package:queue_management_system/widgets/rss_feed_widget.dart';
@@ -46,6 +47,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     var queuesProvider = Provider.of<QueuesProvider>(context, listen: false);
+    final scope = Provider.of<UserProvider>(context, listen: false).scope;
 
     return Scaffold(
         body: Stack(
@@ -56,12 +58,12 @@ class _HomePageState extends State<HomePage> {
             if (!snapshot.hasError &&
                 snapshot.connectionState == ConnectionState.done) {
               var audioPlayer = snapshot.requireData;
-              return RawKeyboardListener(
+              return KeyboardListener(
                 focusNode: _focusNode,
                 autofocus: true,
-                onKey: (event) {
+                onKeyEvent: (event) {
                   debugPrint("${event.runtimeType}");
-                  if (event.runtimeType == RawKeyUpEvent &&
+                  if (event is KeyUpEvent &&
                       event.logicalKey == LogicalKeyboardKey.arrowLeft) {
                     queuesProvider.decreaseNumber();
                     audioPlayer.play(AssetSource('sounds/pixiedust.mp3'),
@@ -69,7 +71,7 @@ class _HomePageState extends State<HomePage> {
                             .toDouble());
                   }
 
-                  if (event.runtimeType == RawKeyUpEvent &&
+                  if (event is KeyUpEvent &&
                       event.logicalKey == LogicalKeyboardKey.arrowRight) {
                     queuesProvider.increaseNumber();
                     audioPlayer.play(AssetSource('sounds/pixiedust.mp3'),
@@ -88,7 +90,7 @@ class _HomePageState extends State<HomePage> {
             Flexible(
                 flex: 1,
                 child: StreamBuilder<QuerySnapshot>(
-                    stream: _firestore.collection('queues').snapshots(),
+                    stream: scope?.queuesQuery(_firestore).snapshots(),
                     builder: (BuildContext context,
                         AsyncSnapshot<QuerySnapshot> snapshot) {
                       if (snapshot.hasError) {

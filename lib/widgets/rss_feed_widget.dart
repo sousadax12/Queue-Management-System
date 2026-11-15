@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:text_scroll/text_scroll.dart';
 import 'package:webfeed/webfeed.dart';
@@ -9,16 +8,14 @@ class RssFeedWidget extends StatefulWidget {
   final String url;
   final double velocity;
 
-  RssFeedWidget({required this.url, required this.velocity});
+  const RssFeedWidget({super.key, required this.url, required this.velocity});
 
   @override
-  _RssFeedWidgetState createState() => _RssFeedWidgetState();
+  State<RssFeedWidget> createState() => _RssFeedWidgetState();
 }
 
 class _RssFeedWidgetState extends State<RssFeedWidget>
     with SingleTickerProviderStateMixin {
-  List<String> _titles = [];
-
   @override
   void initState() {
     super.initState();
@@ -40,31 +37,26 @@ class _RssFeedWidgetState extends State<RssFeedWidget>
             !snapshot.hasError &&
             snapshot.hasData) {
           var titles = snapshot.data;
-          return Container(
+          return SizedBox(
             height: 40.0,
             child: Stack(
               children: [
                 Positioned.fill(
                   bottom: 0,
-                  child: Container(
-                      child: TextScroll(
-                        titles!.join("   |   "),
-                        velocity: Velocity(pixelsPerSecond: Offset(widget.velocity, 0)),
-                        style: TextStyle(color: Colors.white, fontSize: 20),
-                        mode: TextScrollMode.endless,
-                      )),
+                  child: TextScroll(
+                    titles!.join("   |   "),
+                    velocity: Velocity(pixelsPerSecond: Offset(widget.velocity, 0)),
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                    mode: TextScrollMode.endless,
+                  ),
                 ),
               ],
             ),
           );
-        } else
+        } else {
           return Container();
+        }
       }
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }

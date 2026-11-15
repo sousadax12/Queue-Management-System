@@ -1,86 +1,74 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:queue_management_system/auth/operator_scope.dart';
+import 'package:queue_management_system/providers/user_provider.dart';
 
+/// Operator sign-in with an email/password account. The account needs an `operator` role
+/// (or a staff role) for its sites, granted from the admin portal, and a verified email:
+/// the Firestore rules ignore the role of an unverified account. Admins create operator
+/// accounts with `emailVerified: true` (Admin SDK `createUser`).
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late String _email, _password;
+  String _email = '';
+  String _password = '';
   bool _isLoading = false;
-  User? user = FirebaseAuth.instance.currentUser;
 
-  FocusNode? myFocusNode1;
-  FocusNode? myFocusNode2;
-  FocusNode? submitFocusNode;
-
-
-
-  @override
-  void initState() {
-    super.initState();
-    myFocusNode1 = FocusNode();
-    myFocusNode2 = FocusNode();
-    submitFocusNode = FocusNode();
-
-    // To ensure that the first text field gets the initial focus.
-    myFocusNode1!.requestFocus();
-  }
-
+  final FocusNode _passwordFocus = FocusNode();
+  final FocusNode _submitFocus = FocusNode();
 
   @override
   void dispose() {
-    myFocusNode1!.dispose();
-    myFocusNode2!.dispose();
-    submitFocusNode!.dispose();
-
+    _passwordFocus.dispose();
+    _submitFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        automaticallyImplyLeading: false,
+        title: const Text('Operator login'),
       ),
       body: _isLoading
-          ? Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-                child: CircularProgressIndicator(),
-              ),
-          )
+          ? const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
           : Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Form(
+              padding: const EdgeInsets.all(8.0),
+              child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextFormField(
                       onFieldSubmitted: (_) {
-                        FocusScope.of(context).requestFocus(myFocusNode2);
+                        FocusScope.of(context).requestFocus(_passwordFocus);
                       },
                       validator: (input) {
-                        if (input == null || input.isEmpty) {
+                        if (input == null || input.trim().isEmpty) {
                           return 'Please enter an email';
                         }
                         return null;
                       },
-                      onSaved: (input) => _email = input!,
+                      onSaved: (input) => _email = input!.trim(),
                       autofocus: true,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(labelText: 'Email'),
                     ),
                     TextFormField(
-                      onFieldSubmitted: (_) {
-                        FocusScope.of(context).requestFocus(submitFocusNode);
-                      },
+                      focusNode: _passwordFocus,
+                      onFieldSubmitted: (_) => _login(),
                       validator: (input) {
                         if (input == null || input.isEmpty) {
                           return 'Please enter a password';
@@ -89,97 +77,87 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       onSaved: (input) => _password = input!,
                       obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                      ),
+                      autofillHints: const [AutofillHints.password],
+                      decoration: const InputDecoration(labelText: 'Password'),
                     ),
+                    const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () {
-                        _login();
-                      },
-                      child: Text('Login'),
+                      focusNode: _submitFocus,
+                      onPressed: _login,
+                      child: const Text('Login'),
                     ),
                   ],
                 ),
               ),
-          ),
+            ),
     );
   }
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      setState(() {
-        _isLoading = true;
-      });
-      try {
-        UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-          email: _email,
-          password: _password,
+  Future<void> _login() async {
+    final form = _formKey.currentState;
+    if (form == null || !form.validate()) return;
+    form.save();
+    setState(() => _isLoading = true);
+
+    final auth = FirebaseAuth.instance;
+    try {
+      await auth.signInWithEmailAndPassword(email: _email, password: _password);
+      // Force a fresh token so claims granted since the last sign-in are seen.
+      final scope = await loadOperatorScope(auth, forceRefresh: true);
+      if (!mounted) return;
+      if (scope == null) {
+        setState(() => _isLoading = false);
+        await _showError(
+          'No operator access',
+          'This account has no operator role for any site. Ask your organisation admin '
+              'to grant it in the admin portal.',
         );
-        if (userCredential.user != null) {
-          Navigator.popAndPushNamed(context, '/setup');
-        } else {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Email not verified'),
-                content:
-                    Text('Please check your email and verify your account.'),
-                actions: [
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                      return Navigator.pop(context);
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-      } on FirebaseAuthException catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-        if (e.code == 'user-not-found') {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Error'),
-                content: Text('No user found for that email.'),
-                actions: [
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        } else if (e.code == 'wrong-password') {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Error'),
-                content: Text('Wrong password provided for that user.'),
-                actions: [
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        }
+        return;
       }
+      Provider.of<UserProvider>(context, listen: false).scope = scope;
+      Navigator.pushReplacementNamed(context, '/setup');
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      await _showError('Login failed', _messageFor(e));
     }
+  }
+
+  String _messageFor(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'user-not-found':
+      case 'wrong-password':
+        return 'Wrong email or password.';
+      case 'invalid-email':
+        return 'That is not a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later.';
+      case 'network-request-failed':
+        return 'No network connection.';
+      default:
+        return e.message ?? e.code;
+    }
+  }
+
+  Future<void> _showError(String title, String message) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            ElevatedButton(
+              autofocus: true,
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

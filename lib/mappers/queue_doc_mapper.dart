@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:queue_management_system/models/queue_model.dart';
 
 class QueueDocMapper {
   static QueueModel docToQueue(DocumentSnapshot document) {
     return QueueModel(
         document['number'],
+        // Icons come from Firestore, so they can't be const (the APK builds with
+        // --no-tree-shake-icons).
+        // ignore: non_const_argument_for_const_parameter
         IconData(document['icon'], fontFamily: 'FontAwesomeSolid', fontPackage: 'font_awesome_flutter'),
         document['name'],
         Color(document['backgroundColor']),
