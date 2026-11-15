@@ -1,15 +1,253 @@
 rules_version = '2';
 
+// Org-aware, claims-based rules (portal A3, issue #6).
+//
+// Design: docs/design/2026-11-15-admin-portal.md ("Rules shape", "Multi-org model") and
+// docs/design/2026-11-15-android-tv-display.md ("Auth and rules: what pairing needs").
+// Tests: admin-portal/packages/rules-tests (Firestore emulator).
+//
+// Who is who:
+// - Staff and operators sign in with real accounts and carry custom claims set by media-api:
+//   {role, org, sites}. Roles: platformAdmin (every org), orgAdmin (one org), manager and
+//   operator (some sites of one org).
+// - TV boxes sign in anonymously. A box is scoped by its own devices/{uid} doc (siteId, orgId),
+//   which only staff can set.
+// - An anonymous user never has a staff role, even if a claim were present. A signed-in user
+//   with no (known) role can read and write nothing.
+//
+// Anything not matched below is denied.
 service cloud.firestore {
-  match /databases/{database}/documents {
+  match /databases/{db}/documents {
 
-    // Allow authenticated users to access all documents in the database
-    match /{document=**} {
-      // Allow read if user is authenticated (including anonymous users)
-      allow read: if request.auth != null;
+    // ---------------------------------------------------------------- identity
 
-      // Allow write if user is authenticated (including anonymous users)
-      allow write: if request.auth != null;
+    function authed() {
+      return request.auth != null;
+    }
+    function anon() {
+      return authed() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function role() {
+      let r = authed() && !anon() ? request.auth.token.get('role', '') : '';
+      return r in ['platformAdmin', 'orgAdmin', 'manager', 'operator'] ? r : '';
+    }
+    function myOrg() {
+      return request.auth.token.get('org', null);
+    }
+    function mySites() {
+      return request.auth.token.get('sites', []);
+    }
+    function isPlatform() {
+      return role() == 'platformAdmin';
+    }
+    function isStaff() {
+      return role() in ['platformAdmin', 'orgAdmin', 'manager'];
+    }
+    // Any role in org o (platform admins are in every org).
+    function inOrg(o) {
+      return isPlatform() || (role() != '' && o != null && o == myOrg());
+    }
+    function orgAdmin(o) {
+      return isPlatform() || (role() == 'orgAdmin' && o != null && o == myOrg());
+    }
+    function manages(o, s) {
+      return orgAdmin(o)
+        || (role() == 'manager' && o != null && o == myOrg() && s != null && s in mySites());
+    }
+    function operates(o, s) {
+      return manages(o, s)
+        || (role() == 'operator' && o != null && o == myOrg() && s != null && s in mySites());
+    }
+    // siteId null = shared within the org, which only org admins edit.
+    function edits(o, s) {
+      return s == null ? orgAdmin(o) : manages(o, s);
+    }
+
+    // ---------------------------------------------------------------- TV devices
+
+    function devPath() {
+      return /databases/$(db)/documents/devices/$(request.auth.uid);
+    }
+    function dev() {
+      return get(devPath()).data;
+    }
+    function isDeviceOf(s) {
+      return anon() && s != null && exists(devPath()) && dev().get('siteId', null) == s;
+    }
+    function isDeviceIn(o) {
+      return anon() && o != null && exists(devPath()) && dev().get('orgId', null) == o;
+    }
+
+    // ---------------------------------------------------------------- docs
+
+    function d() {
+      return resource.data;
+    }
+    function nd() {
+      return request.resource.data;
+    }
+    function onlyKeys(ks) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(ks);
+    }
+    function sameOrg() {
+      return nd().get('orgId', null) == d().get('orgId', null);
+    }
+    function sitePath(s) {
+      return /databases/$(db)/documents/sites/$(s);
+    }
+    // A doc that names a site must name one of its own org, so one org can never point
+    // a queue, screen, playlist or box at another org's site.
+    function siteInOrg(s, o) {
+      return s == null || (exists(sitePath(s)) && get(sitePath(s)).data.orgId == o);
+    }
+    function screenInSite(sc, s) {
+      return sc == null
+        || (s != null && exists(/databases/$(db)/documents/sites/$(s)/screens/$(sc)));
+    }
+    function isId(v) {
+      return v is string && v.size() > 0;
+    }
+    function isIntIn(v, lo, hi) {
+      return v is int && v >= lo && v <= hi;
+    }
+    function isArgb(v) {
+      return isIntIn(v, 0, 4294967295);
+    }
+    function validQueueNumber(n) {
+      return isIntIn(n, 0, 99);
+    }
+    function validAudit(x) {
+      return (!('updatedAt' in x) || x.updatedAt is timestamp)
+        && (!('updatedBy' in x) || x.updatedBy is string);
+    }
+    // queues/{id} as the portal writes it (contract queueSchema): every legacy field the
+    // Flutter mapper reads (TV invariant 6), plus orgId and siteId (C10).
+    function validQueue(q) {
+      return q.keys().hasAll(['orgId', 'siteId', 'number', 'icon', 'name', 'backgroundColor',
+                              'videoURL', 'videoVolume', 'soundVolume', 'velocity'])
+        && q.keys().hasOnly(['orgId', 'siteId', 'number', 'icon', 'name', 'backgroundColor',
+                             'videoURL', 'videoVolume', 'soundVolume', 'velocity',
+                             'foregroundColor', 'updatedAt', 'updatedBy'])
+        && isId(q.orgId) && isId(q.siteId)
+        && validQueueNumber(q.number)
+        && isIntIn(q.icon, 0, 1114111)
+        && q.name is string && q.name.size() > 0
+        && isArgb(q.backgroundColor)
+        && q.videoURL is string
+        && isIntIn(q.videoVolume, 0, 1)
+        && isIntIn(q.soundVolume, 0, 1)
+        && q.velocity is int && q.velocity >= 0
+        && (!('foregroundColor' in q) || isArgb(q.foregroundColor))
+        && validAudit(q);
+    }
+
+    // ---------------------------------------------------------------- collections
+
+    match /orgs/{o} {
+      allow read: if inOrg(o);
+      allow create, delete: if isPlatform();
+      allow update: if isPlatform()
+        || (orgAdmin(o) && onlyKeys(['name', 'updatedAt', 'updatedBy'])
+            && nd().name is string && nd().name.size() > 0 && validAudit(nd()));
+    }
+
+    match /sites/{s} {
+      allow read: if operates(d().orgId, s) || isDeviceOf(s);
+      allow create: if isId(nd().get('orgId', null)) && orgAdmin(nd().orgId);
+      allow update: if manages(d().orgId, s) && sameOrg();
+      allow delete: if orgAdmin(d().orgId);
+
+      match /screens/{screen} {
+        allow read: if operates(d().orgId, s) || isDeviceOf(s);
+        // The portal copies orgId from the site; it must be the site's org.
+        allow create: if isId(nd().get('orgId', null)) && manages(nd().orgId, s)
+          && siteInOrg(s, nd().orgId);
+        allow update: if manages(d().orgId, s) && sameOrg();
+        allow delete: if manages(d().orgId, s);
+      }
+    }
+
+    match /queues/{q} {
+      // Flutter-era queues without orgId/siteId are invisible until the backfill runs
+      // (contract `backfill:queues`, Admin SDK), except to platform admins.
+      allow read: if operates(d().get('orgId', null), d().get('siteId', null))
+        || isDeviceOf(d().get('siteId', null));
+      allow create: if validQueue(nd()) && manages(nd().orgId, nd().siteId)
+        && siteInOrg(nd().siteId, nd().orgId);
+      allow delete: if manages(d().get('orgId', null), d().get('siteId', null));
+      allow update: if (manages(d().get('orgId', null), d().get('siteId', null))
+                        && validQueue(nd()) && sameOrg() && nd().siteId == d().siteId)
+        // The Flutter operator (and the portal's operator console, A11) only move `number`.
+        || (operates(d().get('orgId', null), d().get('siteId', null))
+            && onlyKeys(['number']) && validQueueNumber(nd().number));
+    }
+
+    match /playlists/{p} {
+      allow read: if (inOrg(d().orgId) && (d().siteId == null || operates(d().orgId, d().siteId)))
+        || isDeviceOf(d().siteId)
+        || (d().siteId == null && isDeviceIn(d().orgId));
+      allow create: if nd().keys().hasAll(['orgId', 'siteId']) && isId(nd().orgId)
+        && edits(nd().orgId, nd().siteId) && siteInOrg(nd().siteId, nd().orgId);
+      allow update: if edits(d().orgId, d().siteId) && sameOrg() && nd().siteId == d().siteId;
+      allow delete: if edits(d().orgId, d().siteId);
+    }
+
+    // TVs never read media. Docs and renditions are written by media-api (Admin SDK) only.
+    match /media/{m} {
+      allow read: if isStaff() && inOrg(d().orgId);
+      allow update: if edits(d().orgId, d().siteId)
+        && onlyKeys(['name', 'tags', 'updatedAt', 'updatedBy']);
+      allow create, delete: if false;
+    }
+
+    match /devices/{uid} {
+      allow get: if request.auth.uid == uid
+        || (isStaff() && d().get('orgId', null) == null)  // unclaimed box, by uid from a code
+        || manages(d().get('orgId', null), d().get('siteId', null));
+      allow list: if isPlatform()
+        || (role() == 'orgAdmin' && d().orgId == myOrg())
+        || (role() == 'manager' && d().orgId == myOrg() && d().siteId in mySites());
+      // The box creates its own doc, without any assignment field.
+      allow create: if anon() && request.auth.uid == uid
+        && !nd().keys().hasAny(['orgId', 'siteId', 'screenId', 'name', 'identifyUntil',
+                                'updatedAt', 'updatedBy']);
+      allow update: if
+        // The box: heartbeat and status.
+        (anon() && request.auth.uid == uid && onlyKeys(['status', 'info', 'lastSeenAt']))
+        // Staff: claim, move, rename, identify, unassign.
+        || (isStaff()
+            && onlyKeys(['orgId', 'siteId', 'screenId', 'name', 'identifyUntil',
+                         'updatedAt', 'updatedBy'])
+            // from: unclaimed, or a box I manage
+            && (d().get('orgId', null) == null
+                || manages(d().get('orgId', null), d().get('siteId', null)))
+            // to: unassigned, or a site (and screen) I manage, in that site's org
+            && ((nd().get('orgId', null) == null && nd().get('siteId', null) == null
+                 && nd().get('screenId', null) == null)
+                || (manages(nd().get('orgId', null), nd().get('siteId', null))
+                    && siteInOrg(nd().get('siteId', null), nd().get('orgId', null))
+                    && screenInSite(nd().get('screenId', null), nd().get('siteId', null))))
+            // no cross-org moves, except by a platform admin
+            && (d().get('orgId', null) == null || nd().get('orgId', null) == null
+                || sameOrg() || isPlatform()));
+      allow delete: if isPlatform();
+    }
+
+    // Pairing (TV design step 2, C4). A set() on an existing code is an update, which is
+    // denied, so PERMISSION_DENIED on create means "collision, retry with a new code".
+    match /pairingCodes/{code} {
+      allow create: if anon() && nd().uid == request.auth.uid
+        && nd().createdAt == request.time
+        && nd().keys().hasOnly(['uid', 'createdAt', 'expiresAt']);
+      allow get: if isStaff();
+      allow delete: if isStaff() || d().uid == request.auth.uid;
+      allow list, update: if false;
+    }
+
+    // Mirror of the claims, written by media-api only.
+    match /users/{uid} {
+      allow read: if request.auth.uid == uid || orgAdmin(d().get('orgId', null));
+      allow write: if false;
     }
   }
 }
