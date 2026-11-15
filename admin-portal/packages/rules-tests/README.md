@@ -8,8 +8,8 @@ The rules follow "Rules shape" in
 pnpm --filter @qms/rules-tests test:emulator
 ```
 
-This starts a Firestore emulator on port 8180 (so it never clashes with the contract package's
-emulator on 8080), loads `firestore.rules` into project `demo-qms-rules`, seeds every contract
+This starts a Firestore emulator on port 8180, with its own hub, logging and websocket ports (so it
+never clashes with the other packages' emulators, which `pnpm -r test:emulator` runs in parallel), loads `firestore.rules` into project `demo-qms-rules`, seeds every contract
 fixture plus the Flutter-era legacy queues before each test, and signs in as one persona per
 role:
 

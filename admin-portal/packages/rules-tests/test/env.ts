@@ -35,7 +35,8 @@ import {
 export const RULES_PATH = fileURLToPath(new URL('../../../../firestore.rules', import.meta.url));
 export const PROJECT_ID = 'demo-qms-rules';
 
-if (!process.env.FIRESTORE_EMULATOR_HOST) {
+const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST;
+if (!EMULATOR_HOST) {
   throw new Error('Run the rules tests with `pnpm test:emulator` (firebase emulators:exec).');
 }
 
@@ -198,7 +199,13 @@ export interface RulesEnv {
 export async function createRulesEnv(): Promise<RulesEnv> {
   const env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
-    firestore: { rules: readFileSync(RULES_PATH, 'utf8') },
+    // Connect directly rather than through the emulator hub: other workspace packages run
+    // their own emulators in parallel (`pnpm -r test:emulator`).
+    firestore: {
+      host: EMULATOR_HOST.slice(0, EMULATOR_HOST.lastIndexOf(':')),
+      port: Number(EMULATOR_HOST.slice(EMULATOR_HOST.lastIndexOf(':') + 1)),
+      rules: readFileSync(RULES_PATH, 'utf8'),
+    },
   });
   const seed = { ...loadContractFixtures(), ...loadLegacyQueueFixtures() };
 
