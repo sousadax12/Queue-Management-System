@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:emulator": "firebase --config ../../firebase.json emulators:exec --only auth --project demo-qms \"vite --mode emulator\"",
+    "dev:emulator": "firebase --config ../../firebase.json emulators:exec --only auth,firestore --project demo-qms \"vite --mode emulator\"",
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
