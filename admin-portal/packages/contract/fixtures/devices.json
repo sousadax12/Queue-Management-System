@@ -1,0 +1,90 @@
+{
+  "devices/tvPortoLeft01uidAAAAAAAAAA": {
+    "orgId": "org_lojas_7Hq2",
+    "siteId": "site_porto_3fKq",
+    "screenId": "scr_lobby_left_Q2mz",
+    "name": "Box 3 (left of door)",
+    "info": {
+      "model": "Chromecast HD",
+      "sdkInt": 34,
+      "appVersion": "0.6.0 (21)",
+      "appVersionCode": 21,
+      "heartbeatSec": 600,
+      "decoders": ["avc", "hevc"],
+      "maxDisplay": "1920x1080"
+    },
+    "status": {
+      "nowPlaying": "md_bunny_8f2c",
+      "cacheBytes": 812004112,
+      "freeBytes": 3210000000,
+      "lastSyncAt": {
+        "__ts": "2026-11-15T09:58:12.123456Z"
+      },
+      "pendingItems": 0,
+      "lastError": null
+    },
+    "lastSeenAt": {
+      "__ts": "2026-11-15T10:00:00Z"
+    },
+    "identifyUntil": null,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "devices/tvLisboa01uidBBBBBBBBBBBBB": {
+    "orgId": "org_clinica_K9xP",
+    "siteId": "site_lisboa_Wd2e",
+    "screenId": null,
+    "name": "Receção TV",
+    "info": {
+      "model": "X96 Max Plus",
+      "sdkInt": 30,
+      "appVersion": "0.5.2 (17)",
+      "appVersionCode": 17,
+      "heartbeatSec": 600,
+      "decoders": ["avc"],
+      "maxDisplay": "3840x2160"
+    },
+    "status": {
+      "nowPlaying": null,
+      "cacheBytes": 0,
+      "freeBytes": 5800000000,
+      "lastSyncAt": null,
+      "pendingItems": 2,
+      "lastError": "download_failed: md_jellyfish_3762"
+    },
+    "lastSeenAt": {
+      "__ts": "2026-11-15T09:41:07.5Z"
+    },
+    "identifyUntil": {
+      "__ts": "2026-11-15T09:42:07Z"
+    },
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  },
+  "devices/tvUnclaimed01uidCCCCCCCCCC": {
+    "info": {
+      "model": "Google TV Streamer",
+      "sdkInt": 34,
+      "appVersion": "0.6.0 (21)",
+      "appVersionCode": 21,
+      "heartbeatSec": 600,
+      "decoders": ["avc", "hevc"],
+      "maxDisplay": "1920x1080"
+    },
+    "status": {
+      "nowPlaying": null,
+      "cacheBytes": 0,
+      "freeBytes": 24000000000,
+      "lastSyncAt": null,
+      "pendingItems": 0,
+      "lastError": null
+    },
+    "lastSeenAt": {
+      "__sentinel": "serverTimestamp"
+    }
+  }
+}

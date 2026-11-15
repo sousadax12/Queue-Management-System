@@ -1,0 +1,38 @@
+{
+  "users/uid_platform_admin_P0wd": {
+    "email": "platform@qms.example",
+    "displayName": "Platform Admin",
+    "role": "platformAdmin",
+    "orgId": null,
+    "sites": []
+  },
+  "users/uid_lojas_admin_x81k": {
+    "email": "admin@lojas.example",
+    "displayName": "Ana Lojas",
+    "role": "orgAdmin",
+    "orgId": "org_lojas_7Hq2",
+    "sites": [],
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_platform_admin_P0wd"
+  },
+  "users/uid_clinica_admin_m2Qe": {
+    "email": "admin@clinica.example",
+    "displayName": null,
+    "role": "orgAdmin",
+    "orgId": "org_clinica_K9xP",
+    "sites": []
+  },
+  "users/uid_clinica_operator_Z7tw": {
+    "email": "balcao@clinica.example",
+    "displayName": "Operador Balcão",
+    "role": "operator",
+    "orgId": "org_clinica_K9xP",
+    "sites": ["site_lisboa_Wd2e"],
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  }
+}

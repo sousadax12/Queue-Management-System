@@ -6,10 +6,12 @@ on:
       - main
     paths-ignore:
       - 'android-tv/**'
+      - 'admin-portal/**'
       - 'docs/**'
   pull_request:
     paths-ignore:
       - 'android-tv/**'
+      - 'admin-portal/**'
       - 'docs/**'
 
 jobs:

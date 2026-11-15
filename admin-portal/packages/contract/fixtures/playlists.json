@@ -1,0 +1,91 @@
+{
+  "playlists/pl_promo_nov_Zx81": {
+    "orgId": "org_lojas_7Hq2",
+    "name": "Promo Novembro",
+    "siteId": null,
+    "mediaIds": ["md_bunny_8f2c", "md_alps_19ab"],
+    "items": [
+      {
+        "mediaId": "md_bunny_8f2c",
+        "type": "video",
+        "durationSec": null,
+        "renditions": [
+          {
+            "url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4",
+            "sha256": "38d763af0161e28145e6300d9a5b3b1e4a387ed8f6c4ba7ac1a5f2948d8fac51",
+            "sizeBytes": 1046987,
+            "mimeType": "video/mp4",
+            "codecs": "avc1.64002a",
+            "width": 1920,
+            "height": 1080
+          }
+        ],
+        "durationMs": 10000
+      },
+      {
+        "mediaId": "md_alps_19ab",
+        "type": "image",
+        "durationSec": 10,
+        "renditions": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1920px-Fronalpstock_big.jpg",
+            "sha256": "166807a3de2d35931156b56e05db36664d49d85e956b09943d16bc9bffa05964",
+            "sizeBytes": 460422,
+            "mimeType": "image/jpeg",
+            "width": 1920,
+            "height": 863
+          }
+        ]
+      }
+    ],
+    "publishedBy": "uid_lojas_admin_x81k",
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "playlists/pl_saude_Rk42": {
+    "orgId": "org_clinica_K9xP",
+    "name": "Saúde em dia",
+    "siteId": "site_lisboa_Wd2e",
+    "mediaIds": ["md_jellyfish_3762", "md_alps_5c0d"],
+    "items": [
+      {
+        "mediaId": "md_jellyfish_3762",
+        "type": "video",
+        "durationSec": 8.5,
+        "renditions": [
+          {
+            "url": "https://test-videos.co.uk/vids/jellyfish/mp4/h264/1080/Jellyfish_1080_10s_1MB.mp4",
+            "sha256": "3762782efe41aa95912ac91dd04433942a3bd96f71f30e8d430aaaf8e9a0bd12",
+            "sizeBytes": 1048435,
+            "mimeType": "video/mp4",
+            "codecs": "avc1.64002a",
+            "width": 1920,
+            "height": 1080
+          }
+        ],
+        "durationMs": 10010
+      },
+      {
+        "mediaId": "md_alps_5c0d",
+        "type": "image",
+        "durationSec": 7.5,
+        "renditions": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1920px-Fronalpstock_big.jpg",
+            "sha256": "166807a3de2d35931156b56e05db36664d49d85e956b09943d16bc9bffa05964",
+            "sizeBytes": 460422,
+            "mimeType": "image/jpeg",
+            "width": 1920,
+            "height": 863
+          }
+        ]
+      }
+    ],
+    "updatedAt": {
+      "__sentinel": "serverTimestamp"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  }
+}

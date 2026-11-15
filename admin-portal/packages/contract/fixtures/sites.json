@@ -1,0 +1,44 @@
+{
+  "sites/site_porto_3fKq": {
+    "orgId": "org_lojas_7Hq2",
+    "name": "Loja Porto Centro",
+    "timeZone": "Europe/Lisbon",
+    "locale": "pt-PT",
+    "defaultScreenId": "scr_lobby_left_Q2mz",
+    "ticker": {
+      "feedUrls": ["https://www.rtp.pt/noticias/rss"],
+      "speedDpPerSec": 60,
+      "refreshMinutes": 15
+    },
+    "chime": {
+      "enabled": true,
+      "volume": 1
+    },
+    "maintenanceHour": 4,
+    "updatedAt": {
+      "__ts": "2026-11-15T09:30:00Z"
+    },
+    "updatedBy": "uid_lojas_admin_x81k"
+  },
+  "sites/site_lisboa_Wd2e": {
+    "orgId": "org_clinica_K9xP",
+    "name": "Clínica Lisboa",
+    "timeZone": "Europe/Lisbon",
+    "locale": "pt-PT",
+    "defaultScreenId": "scr_waiting_Hn5r",
+    "ticker": {
+      "feedUrls": [],
+      "speedDpPerSec": 52.5,
+      "refreshMinutes": 30
+    },
+    "chime": {
+      "enabled": true,
+      "volume": 0.6
+    },
+    "maintenanceHour": 3,
+    "updatedAt": {
+      "__sentinel": "serverTimestamp"
+    },
+    "updatedBy": "uid_clinica_admin_m2Qe"
+  }
+}
