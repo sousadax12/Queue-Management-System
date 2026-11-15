@@ -133,6 +133,25 @@ Options:
 
 The report also lists legacy fields that each queue is missing, which make the Flutter mapper throw.
 
+## Grant the first platform admin
+
+Roles are custom claims (`role`, `org`, `sites`), mirrored into `users/{uid}`. Until `media-api`
+(A4) manages roles, this one-off script makes an existing user a platform admin. The user must
+have signed in to the portal once, so their Auth account exists.
+
+```bash
+pnpm grant-platform-admin --email you@example.com                     # Auth + Firestore emulators
+FIREBASE_SERVICE_ACCOUNT="$(cat ~/keys/sa.json)" \
+  pnpm grant-platform-admin --email you@example.com --project <id>   # a real project
+```
+
+- `--uid <uid>` instead of `--email` looks the user up by uid.
+- Credentials: the service account JSON in `FIREBASE_SERVICE_ACCOUNT`, or a key file path in
+  `GOOGLE_APPLICATION_CREDENTIALS`.
+- The production project (`santos-1b6f6`) also needs `--production`.
+- The script keeps the user's other claims and is idempotent. The user picks up the role on
+  their next token refresh: **Check again** on the portal's "no access" page.
+
 ## Contract rules of thumb
 
 - [`packages/contract/fixtures/README.md`](packages/contract/fixtures/README.md) defines the JSON

@@ -8,7 +8,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
   throw new Error('Run emulator tests with `pnpm test:emulator` (firebase emulators:exec).');
 }
 
-export const { db, close } = connect(target);
+export const { db, auth, close } = connect(target);
 
 /** Wipe the emulator's database between tests. */
 export async function clearFirestore(): Promise<void> {
@@ -20,11 +20,21 @@ export async function clearFirestore(): Promise<void> {
   if (!res.ok) throw new Error(`clear failed: ${res.status} ${await res.text()}`);
 }
 
+/** Delete every Auth emulator user between tests. */
+export async function clearAuth(): Promise<void> {
+  if (target.kind !== 'emulator') throw new Error('refusing to clear a real project');
+  const host = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '127.0.0.1:9099';
+  const res = await fetch(`http://${host}/emulator/v1/projects/${target.projectId}/accounts`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`clear auth failed: ${res.status} ${await res.text()}`);
+}
+
 const pkgDir = fileURLToPath(new URL('../../', import.meta.url));
 
 /** Run a package script (`seed`, `backfill:queues`) through tsx, like a user would. */
 export async function runScript(
-  script: 'seed.ts' | 'backfill-queues.ts',
+  script: 'seed.ts' | 'backfill-queues.ts' | 'grant-platform-admin.ts',
   args: string[],
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   try {

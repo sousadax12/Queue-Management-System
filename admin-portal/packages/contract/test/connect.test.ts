@@ -22,6 +22,9 @@ describe('resolveTarget', () => {
     expect(() =>
       resolveTarget({ project: 'qms-dev', env: { FIRESTORE_EMULATOR_HOST: 'x:1' } }),
     ).toThrow();
+    expect(() =>
+      resolveTarget({ project: 'qms-dev', env: { FIREBASE_AUTH_EMULATOR_HOST: 'x:1' } }),
+    ).toThrow(/FIREBASE_AUTH_EMULATOR_HOST/);
     expect(() => resolveTarget({ project: 'demo-qms', env: {} })).toThrow(/demo/);
   });
 
