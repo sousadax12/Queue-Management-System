@@ -13,6 +13,7 @@ on:
       - 'admin-portal/**'
       - 'android-tv/contract/**'
       - '.github/workflows/admin-portal.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,7 +28,7 @@ defaults:
 
 jobs:
   check:
-    name: Typecheck, lint and test
+    name: Typecheck, lint, test and build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -74,3 +75,80 @@ jobs:
 
       - name: Emulator tests
         run: pnpm -r test:emulator
+
+      - name: Build web
+        run: pnpm --filter @qms/web build
+
+  image:
+    name: Web image
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    # Built on every run to catch Dockerfile breakage; pushed to GHCR only from main.
+    env:
+      PUSH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/qms-admin-web
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=pr
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: admin-portal
+          file: admin-portal/apps/web/Dockerfile
+          push: ${{ env.PUSH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=qms-admin-web
+          cache-to: type=gha,mode=max,scope=qms-admin-web
+
+  deploy:
+    name: Deploy web (Coolify)
+    needs: image
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Secrets can't gate a job directly, so the step checks them. Without COOLIFY_WEBHOOK
+    # the job passes and deploys nothing.
+    env:
+      COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+      COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+
+    steps:
+      - name: Skip (COOLIFY_WEBHOOK not set)
+        if: env.COOLIFY_WEBHOOK == ''
+        run: echo "COOLIFY_WEBHOOK is not set; skipping the deploy."
+        working-directory: .
+
+      - name: Trigger Coolify deploy
+        if: env.COOLIFY_WEBHOOK != ''
+        working-directory: .
+        run: |
+          auth=()
+          if [ -n "$COOLIFY_TOKEN" ]; then auth=(-H "Authorization: Bearer $COOLIFY_TOKEN"); fi
+          curl --fail-with-body --silent --show-error --max-time 60 "${auth[@]}" "$COOLIFY_WEBHOOK"

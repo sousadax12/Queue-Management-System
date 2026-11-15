@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -17,8 +18,12 @@ export default tseslint.config(
     },
   },
   {
+    ...reactHooks.configs.flat.recommended,
+    files: ['apps/web/**/*.{ts,tsx}'],
+  },
+  {
     // Tests poke at fixtures they know the shape of.
-    files: ['**/test/**/*.ts'],
+    files: ['**/test/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-dynamic-delete': 'off',
