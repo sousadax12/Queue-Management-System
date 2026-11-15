@@ -5,7 +5,9 @@ import 'package:queue_management_system/auth/operator_scope.dart';
 import 'package:queue_management_system/providers/user_provider.dart';
 
 /// Operator sign-in with an email/password account. The account needs an `operator` role
-/// (or a staff role) for its sites, granted from the admin portal.
+/// (or a staff role) for its sites, granted from the admin portal, and a verified email:
+/// the Firestore rules ignore the role of an unverified account. Admins create operator
+/// accounts with `emailVerified: true` (Admin SDK `createUser`).
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 

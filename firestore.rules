@@ -12,8 +12,10 @@ rules_version = '2';
 //   operator (some sites of one org).
 // - TV boxes sign in anonymously. A box is scoped by its own devices/{uid} doc (siteId, orgId),
 //   which only staff can set.
-// - An anonymous user never has a staff role, even if a claim were present. A signed-in user
-//   with no (known) role can read and write nothing.
+// - An anonymous user never has a staff role, even if a claim were present. Neither does an
+//   account whose email is not verified (the portal gates on it too; operator accounts are
+//   created with emailVerified: true). A signed-in user with no (known) role can read and
+//   write nothing.
 //
 // Anything not matched below is denied.
 service cloud.firestore {
@@ -27,8 +29,11 @@ service cloud.firestore {
     function anon() {
       return authed() && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
+    function verified() {
+      return request.auth.token.get('email_verified', false) == true;
+    }
     function role() {
-      let r = authed() && !anon() ? request.auth.token.get('role', '') : '';
+      let r = authed() && !anon() && verified() ? request.auth.token.get('role', '') : '';
       return r in ['platformAdmin', 'orgAdmin', 'manager', 'operator'] ? r : '';
     }
     function myOrg() {

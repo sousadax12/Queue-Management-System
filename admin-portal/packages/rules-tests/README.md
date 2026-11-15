@@ -13,12 +13,15 @@ emulator on 8080), loads `firestore.rules` into project `demo-qms-rules`, seeds 
 fixture plus the Flutter-era legacy queues before each test, and signs in as one persona per
 role:
 
-| Persona                                                         | Token                                                          |
-| --------------------------------------------------------------- | -------------------------------------------------------------- |
-| `platform`, `adminA`, `adminB`, `operatorB`                     | Claims taken from `users.json` (the media-api mirror)          |
-| `managerA`, `operatorA`                                         | `manager` / `operator` of org A's site                         |
-| `tvA`, `tvB`, `tvUnclaimed`                                     | Anonymous, scoped by their `devices/{uid}` fixture             |
-| `anonNoDevice`, `anonForged`, `noRole`, `unknownRole`, unauthed | Outsiders: can read and write nothing (except a box's own doc) |
+| Persona                                                                       | Token                                                          |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `platform`, `adminA`, `adminB`, `operatorB`                                   | Claims taken from `users.json` (the media-api mirror)          |
+| `managerA`, `operatorA`                                                       | `manager` / `operator` of org A's site                         |
+| `tvA`, `tvB`, `tvUnclaimed`                                                   | Anonymous, scoped by their `devices/{uid}` fixture             |
+| `anonNoDevice`, `anonForged`, `noRole`, `unknownRole`, `unverified`, unauthed | Outsiders: can read and write nothing (except a box's own doc) |
+
+Staff and operator personas sign in with `email_verified: true`: the rules ignore the role of an
+account whose email is not verified (`unverified` holds a real operator claim and gets nothing).
 
 Every allowed path has a test, and so does every denied one that matters, including cross-org:
 org A can't read org B's data, can't point its queues, screens, playlists or boxes at org B's

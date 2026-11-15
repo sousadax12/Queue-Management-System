@@ -72,6 +72,7 @@ export const UID = {
   operatorA: 'uid_lojas_operator_W2qa',
   noRole: 'uid_no_role_J8kd',
   unknownRole: 'uid_unknown_role_E3np',
+  unverified: 'uid_unverified_op_H6vb',
   anonNoDevice: 'anonNoDevice01uidDDDDDDDDD',
   anonForged: 'anonForged01uidEEEEEEEEEEE',
 } as const;
@@ -91,10 +92,11 @@ function claimsFromUserFixture(uid: string): Claims {
   return { role: user.role, org: user.orgId, sites: user.sites };
 }
 
-const password = (claims: Partial<Claims>, email: string): TokenOptions => ({
+/** Real accounts are created verified (portal sign-up, or `emailVerified: true` via the Admin SDK). */
+const password = (claims: Partial<Claims>, email: string, emailVerified = true): TokenOptions => ({
   ...claims,
   email,
-  email_verified: true,
+  email_verified: emailVerified,
   firebase: { sign_in_provider: 'password' },
 });
 
@@ -127,6 +129,11 @@ export const PERSONAS = {
     uid: UID.unknownRole,
     token: password({ role: 'superuser', org: ORG_A, sites: [SITE_A] }, 'u@x.test'),
   },
+  /** A real operator claim, but the account's email is not verified. */
+  unverified: {
+    uid: UID.unverified,
+    token: password({ role: 'operator', org: ORG_A, sites: [SITE_A] }, 'uv@x.test', false),
+  },
   tvA: { uid: TV_A, token: anonymous() },
   tvB: { uid: TV_B, token: anonymous() },
   tvUnclaimed: { uid: TV_UNCLAIMED, token: anonymous() },
@@ -146,6 +153,7 @@ export const OUTSIDERS = [
   'unauthed',
   'noRole',
   'unknownRole',
+  'unverified',
   'anonNoDevice',
   'anonForged',
 ] as const;

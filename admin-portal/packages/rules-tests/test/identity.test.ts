@@ -49,8 +49,9 @@ const SEEDED = [
   `users/${UID.adminA}`,
 ];
 
-// Unauthenticated, signed in without a role, an unknown role, anonymous without a device,
-// and anonymous with a forged staff claim: none of them can read or write anything.
+// Unauthenticated, signed in without a role, an unknown role, a role on an unverified email,
+// anonymous without a device, and anonymous with a forged staff claim: none of them can read
+// or write anything.
 describe.each(OUTSIDERS)('%s', (who) => {
   it.each(SEEDED)('cannot read %s', async (path) => {
     await assertFails(getDoc(doc(t.db(who), path)));
@@ -101,5 +102,11 @@ describe.each(OUTSIDERS)('%s', (who) => {
 describe('a known role in the token', () => {
   it('is what grants access (control for the outsider cases)', async () => {
     await assertSucceeds(getDoc(doc(t.db('operatorA'), `queues/${QUEUE_A}`)));
+  });
+
+  it('only counts on a verified email: the same operator claim, unverified, is denied', async () => {
+    await assertSucceeds(updateDoc(doc(t.db('operatorA'), `queues/${QUEUE_A}`), { number: 44 }));
+    await assertFails(updateDoc(doc(t.db('unverified'), `queues/${QUEUE_A}`), { number: 45 }));
+    await assertFails(getDoc(doc(t.db('unverified'), `queues/${QUEUE_A}`)));
   });
 });
