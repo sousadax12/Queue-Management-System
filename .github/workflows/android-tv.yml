@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - 'android-tv/**'
+      - 'admin-portal/packages/contract/fixtures/**'
       - '.github/workflows/android-tv.yml'
   pull_request:
     paths:
       - 'android-tv/**'
+      - 'admin-portal/packages/contract/fixtures/**'
       - '.github/workflows/android-tv.yml'
 
 permissions:
