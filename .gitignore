@@ -79,3 +79,6 @@ lib/generated_plugin_registrant.dart
 # End of https://www.toptal.com/developers/gitignore/api/flutter,firebase
 .DS_Store
 queue_management_system.iml
+
+# JVM heap dumps left by killed Gradle builds
+*.hprof

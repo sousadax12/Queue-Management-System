@@ -1,0 +1,70 @@
+name: Android Operator
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'android-operator/**'
+      # :domain and :data are shared with android-tv by projectDir (D1), so a
+      # change there can break this build.
+      - 'android-tv/**'
+      - 'admin-portal/packages/contract/fixtures/**'
+      - '.github/workflows/android-operator.yml'
+  pull_request:
+    paths:
+      - 'android-operator/**'
+      - 'android-tv/**'
+      - 'admin-portal/packages/contract/fixtures/**'
+      - '.github/workflows/android-operator.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-operator-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Lint, unit tests and debug APK
+        working-directory: android-operator
+        run: ./gradlew lint testDebugUnitTest assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-operator-debug-apk
+          path: android-operator/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload lint and test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-operator-reports
+          path: |
+            android-operator/*/build/reports/
+            android-operator/*/build/test-results/
+            android-tv/domain/build/reports/
+            android-tv/domain/build/test-results/
+            android-tv/data/build/reports/
+            android-tv/data/build/test-results/
+          retention-days: 14
