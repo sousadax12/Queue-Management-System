@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 /** One `whereEqualTo` clause: the only filter the repositories need. */
 data class Filter(val field: String, val value: Any?)
@@ -53,7 +54,7 @@ interface FirestoreGateway {
 }
 
 /** The real gateway: Firestore snapshot listeners wired into cold flows. */
-class FirebaseFirestoreGateway(private val firestore: FirebaseFirestore) : FirestoreGateway {
+class FirebaseFirestoreGateway @Inject constructor(private val firestore: FirebaseFirestore) : FirestoreGateway {
 
     override fun snapshots(spec: DocumentSpec): Flow<List<DocumentData>> = callbackFlow {
         val registration = when (spec) {

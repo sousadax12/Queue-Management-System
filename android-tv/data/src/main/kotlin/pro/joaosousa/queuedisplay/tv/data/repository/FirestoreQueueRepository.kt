@@ -8,6 +8,7 @@ import pro.joaosousa.queuedisplay.tv.data.firestore.Filter
 import pro.joaosousa.queuedisplay.tv.data.firestore.FirestoreGateway
 import pro.joaosousa.queuedisplay.tv.data.firestore.QueueMapper
 import pro.joaosousa.queuedisplay.tv.domain.model.Queue
+import javax.inject.Inject
 
 /**
  * `queues` over Firestore.
@@ -15,7 +16,7 @@ import pro.joaosousa.queuedisplay.tv.domain.model.Queue
  * The filter and the ordering are pushed to Firestore rather than applied in Kotlin (invariant 7):
  * a site may hold many queues, and the box only wants its own.
  */
-class FirestoreQueueRepository(private val gateway: FirestoreGateway) : QueueRepository {
+class FirestoreQueueRepository @Inject constructor(private val gateway: FirestoreGateway) : QueueRepository {
 
     override fun queues(siteId: String): Flow<List<Queue>> =
         gateway.snapshots(

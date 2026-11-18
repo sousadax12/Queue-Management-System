@@ -8,6 +8,7 @@ import pro.joaosousa.queuedisplay.tv.data.firestore.FirestoreGateway
 import pro.joaosousa.queuedisplay.tv.data.firestore.ScreenMapper
 import pro.joaosousa.queuedisplay.tv.data.firestore.SiteMapper
 import pro.joaosousa.queuedisplay.tv.domain.model.Site
+import javax.inject.Inject
 
 /**
  * `sites` and their `screens`, read-only (the portal is the only writer).
@@ -15,7 +16,7 @@ import pro.joaosousa.queuedisplay.tv.domain.model.Site
  * `sites` is ordered by `name` so a site picker does not reshuffle between snapshots; Firestore
  * documents have no intrinsic order otherwise.
  */
-class FirestoreConfigRepository(private val gateway: FirestoreGateway) : ConfigRepository {
+class FirestoreConfigRepository @Inject constructor(private val gateway: FirestoreGateway) : ConfigRepository {
 
     override fun sites(): Flow<List<Site>> =
         gateway.snapshots(DocumentSpec.Collection(COLLECTION, orderBy = FIELD_NAME))

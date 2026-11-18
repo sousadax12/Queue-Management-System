@@ -8,3 +8,6 @@ captures/
 .cxx/
 *.iml
 .idea/
+
+# Rendered screen evidence (attached to PRs, not committed)
+build/screenshots/

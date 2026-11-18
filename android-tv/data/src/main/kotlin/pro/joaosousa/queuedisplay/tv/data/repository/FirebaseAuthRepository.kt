@@ -10,6 +10,7 @@ import kotlinx.coroutines.tasks.await
 import pro.joaosousa.queuedisplay.tv.data.firestore.Values
 import pro.joaosousa.queuedisplay.tv.domain.model.OperatorIdentity
 import pro.joaosousa.queuedisplay.tv.domain.model.OperatorRole
+import javax.inject.Inject
 
 /**
  * Firebase Auth, supporting both sign-in paths the port keeps (design D8).
@@ -18,7 +19,7 @@ import pro.joaosousa.queuedisplay.tv.domain.model.OperatorRole
  * value and never from Firestore: the token is what the security rules verify, so anything else
  * could describe permissions the rules would refuse.
  */
-class FirebaseAuthRepository(private val auth: FirebaseAuth) : AuthRepository {
+class FirebaseAuthRepository @Inject constructor(private val auth: FirebaseAuth) : AuthRepository {
 
     override val authState: Flow<AuthState> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { current -> trySend(current.currentUser) }

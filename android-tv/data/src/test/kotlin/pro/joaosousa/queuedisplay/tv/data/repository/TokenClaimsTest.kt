@@ -80,8 +80,8 @@ class TokenClaimsTest {
     @Test
     fun `a missing sites claim is an empty grant, not every site`() {
         assertEquals(emptyList<String>(), TokenClaims.siteIds(null))
-        assertEquals(emptyList(), TokenClaims.siteIds(42L))
-        assertEquals(emptyList(), TokenClaims.siteIds("[]"))
+        assertEquals(emptyList<String>(), TokenClaims.siteIds(42L))
+        assertEquals(emptyList<String>(), TokenClaims.siteIds("[]"))
     }
 
     @Test
