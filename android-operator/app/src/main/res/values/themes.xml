@@ -1,0 +1,4 @@
+<resources>
+    <!-- Compose draws everything; this only sets the window background. -->
+    <style name="Theme.QueueOperator" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>
