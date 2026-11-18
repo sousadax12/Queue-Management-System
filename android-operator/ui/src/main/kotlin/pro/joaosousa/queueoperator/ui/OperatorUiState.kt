@@ -28,6 +28,20 @@ data class OperatorUiState(
     val ticker: List<FeedItem> = emptyList(),
     /** `System.currentTimeMillis()`, injected so the clock widget stays pure. */
     val nowMillis: Long = 0L,
+    /**
+     * The login form's draft values. They live in the state (not in the screen)
+     * because [OperatorEvent.EmailChanged] / [OperatorEvent.PasswordChanged] are
+     * part of the frozen contract, so the state holder is their only owner.
+     * Transient: never logged, never persisted.
+     */
+    val email: String = "",
+    val password: String = "",
+    /**
+     * Why the RSS ticker is empty, when it failed. Separate from [error] so a
+     * dead feed does not hide a working screen behind an error banner (the
+     * ticker degrades, the counter keeps running).
+     */
+    val tickerError: String? = null,
 )
 
 sealed interface OperatorEvent {
