@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import pro.joaosousa.queuedisplay.tv.data.repository.AuthRepository
+import pro.joaosousa.queuedisplay.tv.data.repository.AuthState
 import pro.joaosousa.queuedisplay.tv.data.repository.ConfigRepository
 import pro.joaosousa.queuedisplay.tv.data.repository.QueueRepository
 import pro.joaosousa.queuedisplay.tv.data.repository.RssRepository
@@ -48,9 +49,43 @@ class OperatorStateHolder(
     /** Site-scoped subscriptions (queues, ticker): rebuilt on every site change. */
     private var live: Job? = null
 
+    /** The last auth state seen, so the shell can tell "signed in" from "not yet". */
+    private var currentAuth: AuthState = AuthState.Unknown
+
     init {
-        watchSites()
-        watchClock()
+        scope.launch { watchAuth() }
+        // A session first: `sites` is only readable by a signed-in user.
+        scope.launch { openSession() }
+        // ...and the config reads wait for that session instead of racing it.
+        scope.launch {
+            auth.authState.first { it is AuthState.Anonymous || it is AuthState.Staff }
+            watchSites()
+            watchClock()
+        }
+    }
+
+    private suspend fun watchAuth() {
+        auth.authState.collect { authState ->
+            currentAuth = authState
+            if (authState is AuthState.Staff) _state.update { it.copy(identity = authState.identity) }
+        }
+    }
+
+    /**
+     * Opens an authenticated session before any config read.
+     *
+     * `sites` is read from Firestore, and the deployed rules admit a *signed-in*
+     * user only, so subscribing unauthenticated fails with
+     * `PERMISSION_DENIED: Missing or insufficient permissions` and the setup
+     * screen waits forever. The Flutter app signs in anonymously at startup for
+     * exactly this reason; the port has to do the same. `signIn(email, password)`
+     * later upgrades the same session to a staff one (D8).
+     */
+    private suspend fun openSession() {
+        val existing = auth.authState.first()
+        if (existing is AuthState.Anonymous || existing is AuthState.Staff) return
+        runCatching { auth.signInAnonymously() }
+            .onFailure { throwable -> _state.update { it.copy(busy = false, error = throwable.message ?: NO_SESSION) } }
     }
 
     fun onEvent(event: OperatorEvent) {
@@ -130,6 +165,12 @@ class OperatorStateHolder(
     }
 
     private fun signInAnonymously() {
+        // The startup bootstrap already opened an anonymous session, so the button
+        // just continues into the counter instead of signing in a second time.
+        if (currentAuth is AuthState.Anonymous) {
+            enterHome()
+            return
+        }
         _state.update { it.copy(busy = true, error = null) }
         scope.launch {
             runCatching { auth.signInAnonymously() }
@@ -219,6 +260,7 @@ class OperatorStateHolder(
 
     private companion object {
         const val CLOCK_TICK_MILLIS = 1_000L
+        const val NO_SESSION = "Não foi possível iniciar a sessão. Verifica a rede."
         const val DEFAULT_REFRESH_MINUTES = 15L
         const val NOT_REACHABLE = "Sem ligação. Verifica a rede e tenta de novo."
         const val SIGN_IN_FAILED = "Não foi possível entrar. Verifica o email e a palavra-passe."
