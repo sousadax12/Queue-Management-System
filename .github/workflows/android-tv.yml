@@ -46,7 +46,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Lint, unit tests and debug APK
+      # Covers every module: the TV app (:app), the operator app (:operator) and the shared ones.
+      - name: Lint, unit tests and debug APKs
         working-directory: android-tv
         run: ./gradlew lint testDebugUnitTest assembleDebug
 
@@ -55,6 +56,14 @@ jobs:
         with:
           name: android-tv-debug-apk
           path: android-tv/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload operator debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: operator-debug-apk
+          path: android-tv/operator/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           retention-days: 30
 
       - name: Upload lint and test reports

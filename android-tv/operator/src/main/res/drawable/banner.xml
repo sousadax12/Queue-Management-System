@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder 320x180dp TV launcher banner: a queue number between the operator's left/right
+     arrows. Replace with branded art. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="@color/brand_background"
+        android:pathData="M0,0h320v180h-320z" />
+    <path
+        android:fillColor="#FF8AB4F8"
+        android:pathData="M70,90l30,-30v60zM250,90l-30,-30v60z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M120,55h80v70h-80z" />
+</vector>
