@@ -28,8 +28,8 @@ import pro.joaosousa.queuedisplay.tv.domain.model.Queue
  * One queue: its Font Awesome icon and name over its number, on the queue's colours. A port of the
  * Flutter `QueueWidget` (`lib/widgets/queue_widget.dart`): name 45 sp bold, number 70 sp bold.
  * Flutter mapped the icon but never drew it (design F12); here it sits before the name (design
- * Q7). On a narrow column the name shrinks (down to 28 sp) rather than break inside a word, and
- * wraps to at most two lines, then ends in an ellipsis.
+ * Q7). On a narrow column the name shrinks to stay on one line (down to 36 sp), then to wrap only
+ * between words (down to 28 sp); it takes at most two lines, then ends in an ellipsis.
  *
  * Shared by the operator's setup and home screens and, later, the TV's queue zone.
  */
@@ -77,4 +77,4 @@ fun QueueIcon(codePoint: Int, color: Color, size: TextUnit, modifier: Modifier =
 }
 
 private val ICON_SIZE = 36.sp
-private val NAME_AUTO_SIZE = WholeWordsAutoSize(min = 28.sp, max = 45.sp)
+private val NAME_AUTO_SIZE = WholeWordsAutoSize(min = 28.sp, oneLineMin = 36.sp, max = 45.sp)

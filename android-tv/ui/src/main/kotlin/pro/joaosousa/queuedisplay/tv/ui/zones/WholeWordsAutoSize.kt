@@ -9,25 +9,38 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 /**
- * The largest font size from [max] down to [min], in [step]s, at which the text fits its lines
- * and every line break falls between words. A queue name like "Consultas" shrinks a little on a
- * narrow column instead of breaking into "Consul / tas". At [min] it gives up and lets the
- * text wrap and ellipsise.
+ * Sizes a queue name next to its icon, from [max] down in [step]s:
+ * 1. the largest size down to [oneLineMin] at which it fits on one line ("Balcão A" shrinks a
+ *    little rather than drop the "A" to a second line);
+ * 2. else the largest size down to [min] at which it fits and every line break falls between
+ *    words ("Consultas" never becomes "Consul / tas");
+ * 3. else [min], wrapping and ellipsising as the text's own settings say.
  */
 internal class WholeWordsAutoSize(
     private val min: TextUnit,
+    private val oneLineMin: TextUnit,
     private val max: TextUnit,
     private val step: TextUnit = 1.sp,
 ) : TextAutoSize {
 
     override fun TextAutoSizeLayoutScope.getFontSize(constraints: Constraints, text: AnnotatedString): TextUnit {
+        val layout = { size: Float -> performLayout(constraints, text, size.sp) }
+        largest(oneLineMin, layout) { !it.hasVisualOverflow && it.lineCount == 1 }?.let { return it }
+        largest(min, layout) { !it.hasVisualOverflow && it.breaksOnlyBetweenWords(text.text) }?.let { return it }
+        return min
+    }
+
+    private inline fun largest(
+        floor: TextUnit,
+        layout: (Float) -> TextLayoutResult,
+        fits: (TextLayoutResult) -> Boolean,
+    ): TextUnit? {
         var size = max.value
-        while (size > min.value) {
-            val layout = performLayout(constraints, text, size.sp)
-            if (!layout.hasVisualOverflow && layout.breaksOnlyBetweenWords(text.text)) return size.sp
+        while (size >= floor.value) {
+            if (fits(layout(size))) return size.sp
             size -= step.value
         }
-        return min
+        return null
     }
 
     private fun TextLayoutResult.breaksOnlyBetweenWords(text: String): Boolean =
@@ -37,7 +50,8 @@ internal class WholeWordsAutoSize(
         }
 
     override fun equals(other: Any?) =
-        other is WholeWordsAutoSize && other.min == min && other.max == max && other.step == step
+        other is WholeWordsAutoSize && other.min == min && other.oneLineMin == oneLineMin &&
+            other.max == max && other.step == step
 
-    override fun hashCode() = (min.hashCode() * 31 + max.hashCode()) * 31 + step.hashCode()
+    override fun hashCode() = ((min.hashCode() * 31 + oneLineMin.hashCode()) * 31 + max.hashCode()) * 31 + step.hashCode()
 }
