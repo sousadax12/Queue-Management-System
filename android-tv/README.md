@@ -176,25 +176,33 @@ Today the setup screen is a placeholder that shows the account's scope and a sig
 
 Debug builds talk to the Auth emulator (project `demo-qms`) when built with `-PfirebaseEmulatorHost=<host>`; release builds ignore it.
 
-1. Start the Auth emulator from the repo root:
+1. Start the Auth and Firestore emulators from the repo root, then seed the contract fixtures (from `admin-portal/`; see [Run against the Firestore emulator](#run-against-the-firestore-emulator)):
 
    ```bash
-   firebase emulators:start --only auth --project demo-qms
+   firebase emulators:start --only auth,firestore --project demo-qms
    ```
-
-2. Create a verified operator account. Until `grant-operator` (O1) lands, use the emulator's REST API. Sign up:
 
    ```bash
-   curl -s -H "Content-Type: application/json" "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key" -d '{"email":"balcao@clinica.example","password":"operator123","returnSecureToken":true}'
+   pnpm install && pnpm seed
    ```
 
-   Then, with the `localId` it returns, verify the email and set the claims (the `owner` token is the emulator's admin access):
+2. Create a verified operator account with `grant-operator` ([`docs/operator-accounts.md`](../docs/operator-accounts.md)). It prints a generated password once:
 
    ```bash
-   curl -s -H "Authorization: Bearer owner" -H "Content-Type: application/json" "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/projects/demo-qms/accounts:update" -d '{"localId":"<localId>","emailVerified":true,"customAttributes":"{\"role\":\"operator\",\"org\":\"org_clinica_K9xP\",\"sites\":[\"site_lisboa_Wd2e\"]}"}'
+   pnpm grant-operator --email lisboa@clinica.example --org org_clinica_K9xP --site site_lisboa_Wd2e
    ```
 
-   Sign up a second account (for example `nobody@clinica.example`) and leave it without claims to see the no-access screen.
+   To see the no-access screen, also create an account without claims through the emulator's REST API:
+
+   ```bash
+   curl -s -H "Content-Type: application/json" "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key" -d '{"email":"nobody@clinica.example","password":"operator-test-123"}'
+   ```
+
+   An account without claims sees **No operator access** whether or not its email is verified. To get the role message rather than the unverified one, verify it with the `localId` the call returned:
+
+   ```bash
+   curl -s -H "Authorization: Bearer owner" -H "Content-Type: application/json" "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/projects/demo-qms/accounts:update" -d '{"localId":"<localId>","emailVerified":true}'
+   ```
 
 3. Build, install and launch. From an Android emulator the dev machine is `10.0.2.2`:
 
