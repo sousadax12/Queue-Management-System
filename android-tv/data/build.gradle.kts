@@ -25,6 +25,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // The contract fixture loader, shared with :operator's repository tests.
+    sourceSets.getByName("test").kotlin.srcDir("src/sharedTest/kotlin")
+
     testOptions {
         unitTests.all { test ->
             test.systemProperty("contract.dir", contractDir.asFile.absolutePath)

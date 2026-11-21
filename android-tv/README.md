@@ -170,7 +170,11 @@ Because the Flutter builds were signed with throwaway debug keys, the first inst
 Operators sign in with an email/password account whose ID token has `email_verified: true` and the claims `{role, org, sites}` (`firestore.rules`).
 There is no anonymous sign-in: a restored anonymous session is signed out.
 An account without a usable role, org or sites, or with an unverified email, sees **No operator access** and is signed out.
-Today the setup screen is a placeholder that shows the account's scope and a sign-out button. Queues arrive in O3.
+After sign-in, **setup** lists the queues of the account's scope (`orgId ==` the claim org, `siteId in` the claimed sites, as Flutter's `queuesQuery`) in a row of tiles: D-pad left/right moves the green highlight, select picks.
+**Home** shows the live queue column (the clock, ticker and icon arrive in O4, the video in O5). D-pad right is +1 and left is −1 on the selected queue, wrapping 99 → 0 and 0 → 99, from the last known value; each press plays the chime at the queue's `soundVolume`.
+A press is a plain `update({number})`, so it works offline: the number changes on screen at once and syncs on reconnect (last writer wins).
+Back returns to setup. The selected queue is remembered across restarts (DataStore) and forgotten on sign-out.
+A denied read shows **Access denied**, never "No queues"; a write the server rejects shows a short message on home.
 
 ### Run against the Auth emulator
 
@@ -215,6 +219,7 @@ Debug builds talk to the Auth emulator (project `demo-qms`) when built with `-Pf
    ```
 
 4. With the remote (or `adb shell input keyevent`): type the email, press Enter (focus moves to the password), type the password, press Enter.
-   The operator account reaches the placeholder setup screen; the role-less one sees **No operator access**.
+   The operator account reaches setup with its site's queues; the role-less one sees **No operator access**.
+   Pick a queue with select, then press right/left (`adb shell input keyevent KEYCODE_DPAD_RIGHT`): the number changes in the Firestore emulator UI and on every other client.
 
 CI uploads the operator's debug APK as the `operator-debug-apk` artifact.
