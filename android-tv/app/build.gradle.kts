@@ -6,7 +6,12 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
 }
+
+// Debug builds talk to the Firebase emulators when this is set, e.g.
+// `./gradlew installDebug -PfirebaseEmulatorHost=10.0.2.2` (see README, "Firestore emulator").
+val firebaseEmulatorHost = providers.gradleProperty("firebaseEmulatorHost").orElse("").get()
 
 android {
     namespace = "pro.joaosousa.queuedisplay.tv"
@@ -21,7 +26,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"$firebaseEmulatorHost\"")
+        }
         release {
+            // Release builds always use the real project.
+            buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"\"")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -61,6 +71,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.compose.bom))
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
