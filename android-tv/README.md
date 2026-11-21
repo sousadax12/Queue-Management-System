@@ -171,6 +171,7 @@ Launch on boot, keeping the box awake and other kiosk setup come in M8 (`docs/an
 `:operator` is the native rewrite of the Flutter operator app (design [`2026-11-21-native-operator-app.md`](../docs/design/2026-11-21-native-operator-app.md), Option B).
 It **replaces** the Flutter app on a box: same `applicationId` (`pro.joaosousa.queue_management_system`), same Firebase registration (`operator/google-services.json` is a copy of `android/app/google-services.json`), `versionCode` 1000+.
 Because the Flutter builds were signed with throwaway debug keys, the first install over the Flutter app needs an uninstall (`adb uninstall pro.joaosousa.queue_management_system`).
+Signed releases come from `operator-v*` tags ([`operator-release.yml`](../.github/workflows/operator-release.yml)); the release key, the per-box cutover and the rollback are in [`docs/operator/DEPLOY.md`](../docs/operator/DEPLOY.md).
 
 Operators sign in with an email/password account whose ID token has `email_verified: true` and the claims `{role, org, sites}` (`firestore.rules`).
 There is no anonymous sign-in: a restored anonymous session is signed out.
