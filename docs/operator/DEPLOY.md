@@ -256,7 +256,10 @@ The owner signs off when every item holds:
 - [ ] Each change showed on the displays for that queue within a few seconds.
 - [ ] Wrap-around works (99 → 0 with right, 0 → 99 with left).
 - [ ] The clock is right and the news ticker scrolls.
-- [ ] The queue's video plays and loops (if the queue has one). An `http://` video URL stays black
+- [ ] The queue's video plays and loops (if the queue has one). Supported: a direct file such as
+      MP4, an HLS stream (`.m3u8`), a DASH stream (`.mpd`) and a single YouTube video (muted).
+      A stream is recognised by the end of its URL path, so a playlist URL without `.m3u8` or
+      `.mpd` there stays black, as do YouTube playlists. An `http://` video URL stays black
       in this build; switch such queues to `https://` or YouTube before the pilot.
 - [ ] A network drop (unplug or turn Wi-Fi off for a minute, press a few times, reconnect):
       the box keeps counting and the displays catch up after the reconnect.

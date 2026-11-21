@@ -71,6 +71,34 @@ class LegacyVideoTest {
     }
 
     @Test
+    fun `hls and dash links are direct media, never youtube`() {
+        listOf(
+            "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" to LegacyVideo.Format.Hls,
+            "https://cdn.example.com/live/master.m3u8?token=abc&v=dQw4w9WgXcQ" to LegacyVideo.Format.Hls,
+            "https://cdn.example.com/LIVE/MASTER.M3U8" to LegacyVideo.Format.Hls,
+            "https://cdn.example.com/vod/manifest.mpd" to LegacyVideo.Format.Dash,
+            "https://cdn.example.com/vod/manifest.mpd?sig=a%2Fb#t=10" to LegacyVideo.Format.Dash,
+        ).forEach { (url, format) ->
+            val video = classifyLegacyVideoUrl(url)
+            assertEquals(url, LegacyVideo.Direct(url), video)
+            assertEquals(url, format, (video as LegacyVideo.Direct).format)
+        }
+    }
+
+    @Test
+    fun `only the path extension makes a link a stream`() {
+        listOf(
+            "https://storage.example.com/videos/promo.mp4",
+            "https://storage.example.com/videos/promo",
+            // The extension is in the query or the host, not the path.
+            "https://storage.example.com/promo.mp4?next=playlist.m3u8",
+            "https://m3u8.example.com/manifest.mpd.mp4",
+        ).forEach { url ->
+            assertEquals(url, LegacyVideo.Format.Progressive, LegacyVideo.Direct(url).format)
+        }
+    }
+
+    @Test
     fun `an empty url plays nothing`() {
         assertClassifies(LegacyVideo.None, "")
         assertClassifies(LegacyVideo.None, "   ")
