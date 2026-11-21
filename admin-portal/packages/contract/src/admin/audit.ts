@@ -1,9 +1,13 @@
 import type { Auth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
+import { ACCOUNT_COLUMNS, auditAccount, hasOperatorClaim } from '../audit/accounts.js';
 import { QUEUE_COLUMNS, auditQueue } from '../audit/queues.js';
 import type { AuditReport, SectionReport } from '../audit/report.js';
 
-/** Read handles for the audit. Sections must only read: no set, update, delete or batch. */
+/**
+ * Read handles for the audit. Sections must only read: no set, update, delete or batch, and no Auth
+ * create, update, delete or claim call.
+ */
 export interface AuditContext {
   db: Firestore;
   auth: Auth;
@@ -27,7 +31,40 @@ export const queuesSection: AuditSection = {
   },
 };
 
-export const AUDIT_SECTIONS: readonly AuditSection[] = [queuesSection];
+/**
+ * Every Firebase Auth account with an operator claim, checked for whether the native operator
+ * app would let it in. Accounts without such a claim are only counted. Reads with `listUsers`.
+ */
+export const accountsSection: AuditSection = {
+  id: 'accounts',
+  async run({ auth }) {
+    const rows = [];
+    let total = 0;
+    let pageToken: string | undefined;
+    do {
+      const page = await auth.listUsers(1000, pageToken);
+      total += page.users.length;
+      for (const user of page.users) {
+        if (hasOperatorClaim(user.customClaims)) rows.push(auditAccount(user));
+      }
+      pageToken = page.pageToken;
+    } while (pageToken);
+    rows.sort((a, b) => a.id.localeCompare(b.id));
+    const others = total - rows.length;
+    return {
+      id: 'accounts',
+      title: 'Operator accounts',
+      columns: ACCOUNT_COLUMNS,
+      rows,
+      notes: [
+        `${total} ${total === 1 ? 'account' : 'accounts'} in Firebase Auth: ${rows.length} with an operator claim (listed), ${others} without (not listed).`,
+      ],
+      summary: { accounts: total, withOperatorClaim: rows.length, withoutOperatorClaim: others },
+    };
+  },
+};
+
+export const AUDIT_SECTIONS: readonly AuditSection[] = [queuesSection, accountsSection];
 
 /** Runs the sections in order against the target. Read-only. */
 export async function runPreCutoverAudit(

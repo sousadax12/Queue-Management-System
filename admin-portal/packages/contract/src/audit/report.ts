@@ -1,6 +1,6 @@
 /**
  * The shape of a pre-cutover audit report, and how it is printed. A report is a list of
- * sections (today only `queues`); each section is a table of rows with findings. A new
+ * sections (`queues`, `accounts`); each section is a table of rows with findings. A new
  * section only has to produce a {@link SectionReport}: the table, the JSON output and the
  * exit code need no change.
  */
@@ -35,6 +35,10 @@ export interface SectionReport {
   title: string;
   columns: AuditColumn[];
   rows: AuditRow[];
+  /** Lines printed under the section header, e.g. what was counted but not listed. */
+  notes?: string[];
+  /** Section-wide counts for `--json`. */
+  summary?: Record<string, number>;
 }
 
 export interface AuditReport {
@@ -68,7 +72,8 @@ function renderSection(section: SectionReport): string[] {
     `== ${section.title}: ${section.rows.length} checked, ${flagged.length} need attention ==`,
     '',
   ];
-  if (section.rows.length === 0) return [...out, '(nothing found)', ''];
+  if (section.notes?.length) out.push(...section.notes, '');
+  if (section.rows.length === 0) return [...out, '(nothing to list)', ''];
   out.push(
     ...renderTable(
       ['STATUS', 'ID', ...section.columns.map((c) => c.header)],
@@ -116,6 +121,7 @@ export function reportToJson(report: AuditReport): unknown {
       id: s.id,
       title: s.title,
       attention: s.rows.filter(needsAttention).length,
+      ...(s.summary ? { summary: s.summary } : {}),
       rows: s.rows.map((r) => ({
         id: r.id,
         status: needsAttention(r) ? 'attention' : 'ok',
