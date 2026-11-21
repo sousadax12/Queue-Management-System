@@ -4,8 +4,10 @@ Refs #21
 
 ## Status
 
-**Proposed (2026-11-21).** Nothing is implemented yet. The [Decision](#decision) section is
-empty until the owner picks an option.
+**Accepted (2026-11-21).** The owner picked **Option B, phase 1 = TV-box parity only**, and
+answered the open questions. See [Decision](#decision). The sections below are updated to
+match. The main change from the proposal: advancing works **offline, last writer wins**
+(a plain `update`, not a transaction).
 
 ## Context
 
@@ -57,7 +59,8 @@ never advance it. The layout is a fixed landscape row with 300 px tiles. The man
 TV-first but keeps `LAUNCHER` and makes touch optional, which is what lets it install on
 generic boxes too. The code does **not** settle whether phones or tablets matter: an iOS app
 is registered in Firebase and `ios/` builds, and the portal design planned a phone-friendly
-operator console (A11) for that job. This is [Open question 1](#open-questions).
+operator console (A11) for that job. **Answered (Q1):** TV boxes with a remote only. iOS is
+out of scope.
 
 ### Constraints from rules v1 and the contract
 
@@ -113,7 +116,7 @@ comment on the PR. This design answers each point:
 | Queue query filtered by site only. | The query is built by a port of `OperatorScope` (F2): `orgId ==` **and** `siteId in`, unit-tested on the same cases as `test/operator_scope_test.dart`, and mirrored by a rules-test. |
 | Ignored the `org` claim and `email_verified`, did not force-refresh the token, and let a role-less account reach Home. | `OperatorScope.fromClaims` requires the org; the session checks `email_verified` (closing F4); the token is force-refreshed after sign-in; no scope → "No operator access" and sign out. |
 | `.catch { emit(emptyList()) }`, so a permission denial looked like "no queues". | Repositories return **typed results** (`Loading`, `Data`, `Error(PermissionDenied/Network/Unknown)`). The UI shows "No queues for this account" and "Access denied" as different states. |
-| `number + 1` with no wrap, and no decrement. | Pure `QueueNumber.next()/previous()` with the 99↔0 wrap, both directions, written in a **transaction** that reads the live number (this also fixes F7's stale-copy bug). |
+| `number + 1` with no wrap, and no decrement. | Pure `QueueNumber.next()/previous()` with the 99↔0 wrap, both directions, computed from the **live** snapshot rather than a setup-time copy (fixing F7's stale-copy bug) and written with a plain `update({number})` that works offline (owner decision Q6). |
 | Material 3 "phone/tablet-shaped touch UI", no `LEANBACK_LAUNCHER`, touchscreen required, no D-pad. | **TV box with a remote first:** `LEANBACK_LAUNCHER` + `LAUNCHER`, touch optional, D-pad left/right/center as in F5/F7, Compose for TV like `android-tv`. |
 | No chime, no default RTP ticker, Font Awesome icon left as a TODO. | All three are milestones with acceptance criteria (O3, O4). The icon is rendered (F12 was a gap in Flutter too). |
 | Sibling build including `android-tv/{domain,data}` by **`projectDir`**; its CI ran on `android-tv/**`. | The recommended option has **no `projectDir` include**. The operator is a second app module inside the one `android-tv` build, with one settings file and one catalog (Option B). Option A, if chosen instead, shares nothing but the fixtures. |
@@ -275,11 +278,17 @@ upgrade path open.
   from the scope (`orgId ==`, `siteId in` the first 30 sites; no filter for `platformAdmin`, as
   in F2) and maps through M2's `QueueMapper`. Errors are typed, never empty lists. Sorted by
   name on the client.
-- **Advancing.** `advance(queueId, direction)` runs a Firestore **transaction**: it reads
-  `number` (through `Number`, so `Long` or `Double`), computes `QueueNumber.next/previous`
-  (99↔0), and writes only `{number: Long}`. Presses go through one serial queue so fast presses
-  apply in order. A failure (offline, denied) shows a short on-screen message. The chime plays
-  on the press (F8 parity) through `SoundPool`, preloaded, at `soundVolume`.
+- **Advancing (owner decision Q6: offline, last writer wins).** `advance(queueId, direction)`
+  takes the **last known** `number` of that queue from the live listener (read through
+  `Number`, so `Long` or `Double`; the listener includes this device's own pending writes, so
+  repeated presses build on each other), computes `QueueNumber.next/previous` (99↔0), and
+  calls a plain `update({number: Long})`. No transaction: Firestore's offline cache queues
+  the write and applies it locally at once, so the tile changes with the network off and the
+  write syncs on reconnect, as in Flutter. Concurrent writers to the same queue are last
+  writer wins. Presses go through one serial queue so fast presses apply in order. Being
+  offline is **not** an error. Only a write the server rejects (for example
+  `PERMISSION_DENIED`) shows a short on-screen message. The chime plays on the press (F8
+  parity) through `SoundPool`, preloaded, at `soundVolume`.
 - **Input.** `onKeyEvent` on the home root: `DPAD_LEFT`/`DPAD_RIGHT` on key up (F7). Setup:
   focusable tiles in a `LazyRow`, `DPAD_CENTER`/`ENTER`/`NUMPAD_ENTER` or a tap selects (F5).
 - **Display zones** (in `:ui`). `QueueTile` renders name, number and the Font Awesome Solid
@@ -292,8 +301,9 @@ upgrade path open.
   **live** queue document, so it fixes F9's quirk.
 - **Navigation.** Login → setup → home, as in Flutter, with sign-out on setup. One deliberate
   change: **Back on home returns to setup** instead of exiting the app (F13), so an operator
-  can switch queue without killing the app. Persisting the selected queue across reboots is
-  [Open question 9](#open-questions).
+  can switch queue without killing the app. The selected queue id is **remembered across
+  restarts** in DataStore (default for Q9): with a restored session and a remembered queue
+  still in scope, the app opens on home. Sign-out clears it. Starting on boot is deferred.
 
 ### Distribution and upgrade
 
@@ -317,8 +327,10 @@ upgrade path open.
 - **`versionCode`:** start at **1000**. That is above anything Flutter produced (`1.0.0+1` →
   1, and CI never passes `--build-number`), so a box that still has the Flutter app can never
   "downgrade". Release builds use `1000 + github.run_number`. `versionName` starts at `2.0.0`.
-- **Channel:** sideloaded APK from a tagged release workflow, unless the owner has an MDM or a
-  Play private track (TV design Q2 asks the same).
+- **Channel:** a sideloaded APK from a tagged release workflow (default for Q4).
+- **Owner decision (Q3):** a one-time uninstall of Flutter on each box, plus a new release
+  keystore that the owner creates and adds to GitHub secrets. The `applicationId` and the
+  `versionCode` 1000+ scheme above are confirmed.
 - **Rules deployment (#17):** the native app works with the current allow-all rules **and**
   rules v1, because its claim-scoped queries are valid under both. Deploy rules v1 once every
   box runs the native app, or the current Flutter `main` build (which also uses claims).
@@ -330,47 +342,62 @@ needs M2 merged. O4 and O5 can run in parallel after O3.
 
 | # | PR | Acceptance criteria |
 |---|---|---|
-| O0 | **This design doc.** | The owner records a decision below, and the open questions that block O2 (1, 2, 3) are answered or explicitly deferred. |
+| O0 | **This design doc.** | Done: decision recorded below on 2026-11-21. |
 | O1 | **`grant-operator` CLI** in `admin-portal/packages/contract` (Admin SDK, beside `grant-platform-admin`). It creates the user if missing (with a password prompt or a generated one), sets `emailVerified: true`, sets claims `{role: 'operator' \| 'manager', org, sites}`, and mirrors `users/{uid}`. It checks that the org exists and that each site belongs to it, and supports `--dry-run`. A short `docs/operator-accounts.md` covers the CLI and running `pnpm backfill:queues` first. | Vitest on the emulator: the account it creates can run the operator query and advance a queue of its site, and is denied another org's or site's queue (reusing the rules-tests pattern). The tool refuses an unknown org, a site from another org, and an empty site list. It never targets production without `--project … --production`, exactly like `grant-platform-admin`. |
 | O2 | **Scaffold `:operator` + sign-in.** The module in `android-tv/settings.gradle.kts`; `applicationId pro.joaosousa.queue_management_system`, `versionCode 1000`, the existing `google-services.json`; manifest with `LEANBACK_LAUNCHER` + `LAUNCHER`, `leanback` and `touchscreen` not required, a TV banner, `INTERNET`. `OperatorScope`/`StaffRole` in `:domain`; `OperatorSession`, login and no-access screens, error-message mapping (F3), sign-out. `android-tv.yml` uploads the operator APK. | JVM tests port every case in `test/operator_scope_test.dart`, plus `email_verified == false` → `NoAccess`, anonymous user → signed out, and force-refresh after sign-in. A Robolectric test drives login with the D-pad only (Enter on email moves to password, Enter submits). On an Android TV emulator against the Auth emulator: an O1 account reaches the (placeholder) setup screen, and a role-less account sees "No operator access". `lint testDebugUnitTest assembleDebug` is green for all modules. |
-| O3 | **Queues, setup, advancing and chime (usable operator).** Needs M2. `OperatorQueueRepository` over M2's `QueueMapper`, with typed errors; the setup screen (F5); the home queue column (F6); transactional advancing with the wrap (F7); `SoundPool` chime at `soundVolume` (F8); Back → setup. A rules-test mirroring the native transaction (get, then update `number`) is added to `admin-portal/packages/rules-tests`. | `QueueNumber` tests (0→99, 99→0, ±1). Repository tests over the contract fixtures (both orgs, legacy docs, `Long`/`Double`). The rules-test passes. On the TV emulator with the Firestore emulator seeded by `pnpm seed` and rules v1: setup shows only the operator's site's queues; right/left change the number and every client sees it; 99→0 and 0→99 work; logcat shows **zero** `PERMISSION_DENIED`. With the network off, a press shows an error and doesn't change the number. A denied query shows "Access denied", not "No queues". |
+| O3 | **Queues, setup, advancing and chime (usable operator).** Needs M2. `OperatorQueueRepository` over M2's `QueueMapper`, with typed errors; the setup screen (F5); the home queue column (F6); advancing with a plain `update({number})` from the last known value, with the wrap, working offline (F7, Q6); `SoundPool` chime at `soundVolume` (F8); Back → setup; the selected queue remembered across restarts (Q9). A rules-test mirroring the native write (a plain `updateDoc` of `number` by an operator, at 0, 99 and the wrapped values) is added to `admin-portal/packages/rules-tests`, if the existing operator cases in `queues.test.ts` don't already cover it. | `QueueNumber` tests (0→99, 99→0, ±1). Repository tests over the contract fixtures (both orgs, legacy docs, `Long`/`Double`). The rules-test passes. On the TV emulator with the Firestore emulator seeded by `pnpm seed` and rules v1: setup shows only the operator's site's queues; right/left change the number and every client sees it; 99→0 and 0→99 work; logcat shows **zero** `PERMISSION_DENIED`. **With the network off**, presses update the local number at once (and chime) with no error; after reconnecting, the last value syncs and other clients see it. A denied query shows "Access denied", not "No queues". After an app restart, the remembered queue opens on home. |
 | O4 | **Display zones in `:ui`: queue tile with icon, clock, RTP ticker.** `QueueTile` with the Font Awesome Solid glyph (font bundled, OFL notice added), `ClockZone`, `TickerZone` with an RSS parser and client in `:data` (RTP default URL, 15-minute refresh, last good list kept). Roborazzi added to the catalog; home screen layout at flex 1:3 as in Flutter. | RSS parser tests on a saved RTP feed, plus malformed, empty and HTTP-error cases (the ticker hides itself on error). Roborazzi goldens at 1920×1080 and 1280×720: home with two queues, a long queue name, and the ticker hidden. The icon for code point `61713` renders the same glyph as `font_awesome_flutter`. TV M3's brief can say "use these zones". |
 | O5 | **Legacy video zone.** `LegacyVideoZone` in `:ui` (Media3 for direct URLs, looping, `videoVolume` 0/1; YouTube in a WebView IFrame player, muted, looping; playlist-only links rejected as in Flutter; any error → black). It follows the live queue document. | URL classification tests (YouTube watch, `youtu.be`, playlist-only, direct MP4, empty). A manual check on the TV emulator: an MP4 loops, a YouTube link plays muted, a broken URL leaves the area black without affecting the queue column or the ticker. Changing `videoURL` in the emulator switches the video without a restart. |
-| O6 | **Release and cutover.** A tag-triggered workflow building a signed `:operator:assembleRelease` (keystore from secrets that the owner adds), `versionCode = 1000 + run_number`; `docs/operator/DEPLOY.md` with the cutover checklist (check the installed signature, uninstall Flutter, install, sign in with an O1 account, pick a queue) and the rollback (reinstall the Flutter APK). A pilot on one box. Retiring `lib/` and `build-apk.yml` is a **separate** PR after the owner signs off on the pilot. | A signed release APK installs over a previous native release in place. The pilot box runs a full working day; the owner signs off. |
-| O-touch | *Only if Open question 1 says phones/tablets matter.* On-screen −/+ buttons, a compact/portrait layout, touch-first setup. | Goldens at phone sizes; advancing works by touch alone. |
+| O6 | **Release and cutover.** A tag-triggered workflow building a signed `:operator:assembleRelease` (keystore from secrets that the owner adds), `versionCode = 1000 + run_number`; `docs/operator/DEPLOY.md` with the cutover checklist (check the installed signature, uninstall Flutter, install, sign in with an O1 account, pick a queue) and the rollback (reinstall the Flutter APK). A pilot on one box. **Before O6, confirm the box inventory runs Android 8.0+** (`minSdk 26`, Q2 default). Retiring `lib/`, `ios/`, `web/`, `test/` and `build-apk.yml` is a **separate** PR after the owner signs off on the pilot (Q11). | A signed release APK installs over a previous native release in place. The pilot box runs a full working day; the owner signs off. |
+| O-touch | **Deferred** (Q1: TV boxes only). Kept here in case phones or tablets come back: on-screen −/+ buttons, a compact/portrait layout, touch-first setup. | Goldens at phone sizes; advancing works by touch alone. |
 
 ## Open questions
 
-1. **Form factor.** Do phones or tablets matter for operators, or only TV boxes with a remote?
-   Is anyone still running the iOS build (`ios/`, registered in Firebase)? The code says TV
-   boxes: the home screen has no touch control.
-2. **Box inventory.** Which boxes run the operator app today, and on which Android versions?
-   `minSdk 26` (shared with `android-tv`) excludes Android 7.x; Flutter's floor is lower.
-3. **Current installs and signing.** How are the Flutter builds installed today (a CI
-   artifact, a local build, how many boxes)? Is a one-time uninstall/reinstall per box
-   acceptable? If you still hold the keystore that signed the installed APKs, say so; but we
-   recommend a new release key either way.
-4. **Release key and channel.** Will you create the release keystore and add it to GitHub
-   secrets (we can't)? Sideload, MDM, or a Play private track?
-5. **Operator accounts.** One shared account per site or box, or one per person (portal
-   design Q6)? Who runs `grant-operator` and `backfill:queues` against `santos-1b6f6`?
-6. **Advancing semantics.** Transactions need a connection, so an offline box can't advance.
-   Is that right, or should advancing work offline (last writer wins, as Flutter does today)?
-   Can two operators work the same queue at once?
-7. **Font Awesome icon.** Flutter maps the icon but never shows it. Should the tile render it
-   (proposed: yes, beside the name)?
-8. **YouTube.** Is it still used (TV design Q5)? Keeping it means a WebView player. Flutter
-   starts it muted; is that intended?
-9. **Kiosk behaviour.** Should the operator app remember the selected queue across reboots and
-   start on boot, like the TV app (TV design D8)? Flutter does neither.
-10. **Who advances numbers in the long run?** TV design Q1 (D-pad on the display) and portal
-    A11 (a phone console) are both still open. If the display will advance numbers, Option C
-    becomes the end state.
-11. **Retiring Flutter.** After the pilot, may we delete `lib/`, `ios/`, `web/`, `test/` and
-    `build-apk.yml` in one PR?
-12. **Ticker feed.** Is the hard-coded RTP feed right for every org, or should a feed URL per
-    site come later (a contract change)?
+All twelve were settled on 2026-11-21. **Owner** marks the owner's answer. **Default**
+marks a default the orchestrator chose, which the owner can override at any time.
+
+1. **Form factor.** Do phones or tablets matter, or only TV boxes with a remote? Is anyone
+   still running the iOS build? **Owner:** TV boxes with a remote only. iOS is out of scope.
+   O-touch stays deferred.
+2. **Box inventory.** Which boxes and Android versions run the operator app? **Default:** keep
+   `minSdk 26`, and confirm the box inventory before O6.
+3. **Current installs and signing.** Is a one-time uninstall/reinstall per box acceptable?
+   **Owner:** yes, a one-time uninstall of Flutter on each box, plus a new release keystore.
+   Keep `applicationId pro.joaosousa.queue_management_system` and `versionCode` 1000+.
+4. **Release key and channel.** **Owner:** the owner creates the keystore and adds it to
+   GitHub secrets. **Default:** a sideloaded APK from a tagged release.
+5. **Operator accounts.** One per site or one per person? **Default:** one operator account
+   per site for now.
+6. **Advancing semantics.** Online-only transactions, or offline? **Owner:** it must work
+   **offline, last writer wins**, as in Flutter. A plain `update({number})` from the last known
+   value, with the 99↔0 wrap. O3 is rewritten to match.
+7. **Font Awesome icon.** **Default:** render it beside the name.
+8. **YouTube.** **Default:** keep it, muted as in Flutter.
+9. **Kiosk behaviour.** **Default:** remember the selected queue across restarts. Starting on
+   boot is deferred.
+10. **Who advances numbers in the long run?** **Default:** unchanged. B now, and C stays
+    possible later if TV design Q1 says the display should advance numbers.
+11. **Retiring Flutter.** **Default:** retire `lib/`, `ios/`, `web/`, `test/` and
+    `build-apk.yml` in a separate PR after the pilot sign-off.
+12. **Ticker feed.** **Default:** the RTP feed stays hard-coded for now.
 
 ## Decision
 
-<!-- Left empty for the owner. -->
+**Accepted on 2026-11-21 by the owner.**
+
+- **Option B:** the operator is a second app module, `:operator`, in the `android-tv` build,
+  sharing `:domain`, `:data` and new `:ui` zones, with one catalog and no `projectDir` include.
+- **Phase 1 = TV-box parity only.** TV boxes with a remote; iOS out of scope; O-touch deferred.
+- **Rollout:** a one-time uninstall of Flutter on each box; a new release keystore that the
+  owner creates and adds to GitHub secrets; `applicationId pro.joaosousa.queue_management_system`;
+  `versionCode` 1000+.
+- **Advancing works offline, last writer wins.** A plain `update({number})` computed from the
+  last known value with the 99↔0 wrap replaces the proposed transaction. O3's scope and
+  acceptance criteria are updated accordingly, and its rules-test mirrors a plain update.
+- **Delivery plan:** milestones O1–O6 are adopted as revised above. O1 and O2 can start now;
+  O3 needs TV M2.
+- **Defaults chosen by the orchestrator, which the owner can override:** Q2 (`minSdk 26`,
+  inventory confirmed before O6), Q4 (sideload from tagged releases), Q5 (one account per
+  site), Q7 (render the icon), Q8 (keep YouTube, muted), Q9 (remember the queue; boot start
+  deferred), Q10 (unchanged), Q11 (retire Flutter in a separate PR after the pilot), Q12 (RTP
+  hard-coded).
