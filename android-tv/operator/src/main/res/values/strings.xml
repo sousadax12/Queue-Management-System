@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Queue Operator</string>
+
+    <string name="loading">Loading…</string>
+    <string name="start_error">Error: %1$s</string>
+    <string name="retry">Retry</string>
+    <string name="ok">OK</string>
+
+    <!-- Login: the Flutter login screen's texts (lib/pages/login_page.dart). -->
+    <string name="login_title">Operator login</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_submit">Login</string>
+    <string name="login_signing_in">Signing in…</string>
+    <string name="login_missing_email">Please enter an email</string>
+    <string name="login_missing_password">Please enter a password</string>
+    <string name="login_failed">Login failed</string>
+    <string name="login_wrong_credentials">Wrong email or password.</string>
+    <string name="login_invalid_email">That is not a valid email address.</string>
+    <string name="login_user_disabled">This account has been disabled.</string>
+    <string name="login_too_many_requests">Too many attempts. Try again later.</string>
+    <string name="login_no_network">No network connection.</string>
+
+    <string name="no_access_title">No operator access</string>
+    <string name="no_access_no_role">This account has no operator role for any site. Ask your organisation admin to grant it in the admin portal.</string>
+    <string name="no_access_unverified">This account\'s email address is not verified. Ask your organisation admin to verify it.</string>
+
+    <!-- Setup is a placeholder until O3 (queues). -->
+    <string name="setup_title">Select a queue:</string>
+    <string name="setup_signed_in_as">Signed in as %1$s</string>
+    <string name="setup_scope">%1$s · %2$s</string>
+    <string name="setup_all_orgs">all organisations</string>
+    <string name="setup_whole_org">org %1$s, all sites</string>
+    <string name="setup_sites">org %1$s, sites %2$s</string>
+    <string name="setup_placeholder">Queue selection arrives in the next update.</string>
+    <string name="sign_out">Sign out</string>
+</resources>
