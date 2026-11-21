@@ -1,26 +1,11 @@
 name: Admin portal
 
+# Called by ci.yml, which decides from the changed paths whether it runs.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'admin-portal/**'
-      - 'android-tv/contract/**'
-      - '.github/workflows/admin-portal.yml'
-  pull_request:
-    paths:
-      - 'admin-portal/**'
-      - 'android-tv/contract/**'
-      - '.github/workflows/admin-portal.yml'
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: admin-portal-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
