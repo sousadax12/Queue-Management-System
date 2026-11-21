@@ -1,23 +1,29 @@
 #!/usr/bin/env bash
 #
 # Pre-cutover audit: lists the production `queues` docs that will look or behave
-# differently once a box moves from the Flutter operator app to the native one.
-# READ-ONLY: it reads the `queues` collection once and never writes.
+# differently once a box moves from the Flutter operator app to the native one,
+# and the operator accounts the native app would lock out.
+# READ-ONLY: it reads the `queues` collection once and lists the Firebase Auth
+# accounts. It never writes and never changes an account.
 #
 # Usage:
 #   scripts/pre-cutover-audit.sh --project <firebase-project-id> [--json]
 #   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 scripts/pre-cutover-audit.sh [--json]
 #
 # Options:
-#   --project <id>  The Firebase project to read. Required unless
-#                   FIRESTORE_EMULATOR_HOST is set (then it reads the emulator).
-#   --json          Machine-readable output instead of the table.
-#   -h, --help      Show this help.
+#   --project <id>    The Firebase project to read. Required unless
+#                     FIRESTORE_EMULATOR_HOST is set (then it reads the Firestore
+#                     and Auth emulators).
+#   --section <name>  Run only this section: queues or accounts. Repeatable.
+#                     Default: both.
+#   --json            Machine-readable output instead of the tables.
+#   -h, --help        Show this help.
 #
 # Credentials (yours; nothing is stored or committed), one of:
 #   gcloud auth application-default login
 #   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-# A read-only role such as roles/datastore.viewer is enough.
+# Read-only roles are enough: roles/datastore.viewer (queues) and
+# roles/firebaseauth.viewer (accounts).
 #
 # Per queue it reports:
 #   - text colour: foregroundColor missing, not white (Flutter always paints
@@ -25,6 +31,11 @@
 #   - videoURL class: empty, youtube, mp4, hls-dash, http, other (or rejected)
 #   - missing orgId/siteId (the native app cannot see such a queue)
 #   - fields the native app would silently replace with its defaults
+#
+# Per account with an operator claim (role, org or sites) it reports:
+#   - emailVerified (the native app refuses an unverified account; Flutter
+#     does not), disabled, and the role and scope the claims grant
+# Accounts without an operator claim are counted, not listed.
 #
 # Exit code: 0 nothing to do, 1 something needs attention, 2 usage or runtime
 # error. How to read the result: docs/operator/DEPLOY.md, section 3.

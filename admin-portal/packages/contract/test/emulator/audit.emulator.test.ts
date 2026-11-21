@@ -1,15 +1,22 @@
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { describeTarget, runPreCutoverAudit, writeDocs } from '../../src/admin/index.js';
+import {
+  describeTarget,
+  grantOperator,
+  runPreCutoverAudit,
+  writeDocs,
+} from '../../src/admin/index.js';
 import { exitCodeOf, needsAttention } from '../../src/audit/report.js';
 import { loadContractFixtures, loadLegacyQueueFixtures } from '../../src/fixtures.js';
-import { auth, clearFirestore, close, db, runScript, target } from './helpers.js';
+import { auth, clearAuth, clearFirestore, close, db, runScript, target } from './helpers.js';
 
 const contract = loadContractFixtures();
 const legacy = loadLegacyQueueFixtures();
 
-beforeEach(clearFirestore);
+beforeEach(async () => {
+  await Promise.all([clearFirestore(), clearAuth()]);
+});
 afterAll(close);
 
 /** Every document in the database with its update time: any write would change it. */
@@ -28,7 +35,7 @@ describe('pre-cutover audit (emulator)', () => {
     const report = await runPreCutoverAudit({ db, auth }, describeTarget(target));
     expect(await snapshot()).toEqual(before);
 
-    expect(report.sections.map((s) => s.id)).toEqual(['queues']);
+    expect(report.sections.map((s) => s.id)).toEqual(['queues', 'accounts']);
     const status = Object.fromEntries(
       report.sections[0]!.rows.map((r) => [r.id, needsAttention(r) ? 'attention' : 'ok']),
     );
@@ -60,7 +67,10 @@ describe('pre-cutover audit (emulator)', () => {
     expect(res.code, res.stderr).toBe(0);
     expect(JSON.parse(res.stdout)).toMatchObject({
       attention: 0,
-      sections: [{ id: 'queues', rows: [{ id: 'q_balcao_a_P4tc', status: 'ok', findings: [] }] }],
+      sections: [
+        { id: 'queues', rows: [{ id: 'q_balcao_a_P4tc', status: 'ok', findings: [] }] },
+        { id: 'accounts', summary: { accounts: 0, withOperatorClaim: 0 }, rows: [] },
+      ],
     });
   });
 
@@ -93,5 +103,116 @@ describe('pre-cutover audit (emulator)', () => {
     const help = await run(['--help']);
     expect(help.code).toBe(0);
     expect(help.stdout).toContain('scripts/pre-cutover-audit.sh --project <firebase-project-id>');
+  });
+});
+
+describe('pre-cutover audit: operator accounts (emulator)', () => {
+  const ORG = 'org_lojas_7Hq2';
+  const SITE = 'site_porto_3fKq';
+  const claims = { role: 'operator', org: ORG, sites: [SITE] };
+
+  /** One good operator (made by grant-operator), three broken ones, and two non-operators. */
+  const seedAccounts = async () => {
+    await writeDocs(db, contract);
+    await grantOperator(auth, db, {
+      email: 'porto@example.com',
+      role: 'operator',
+      org: ORG,
+      sites: [SITE],
+      by: 'test',
+    });
+    const create = async (
+      email: string,
+      user: { emailVerified: boolean; disabled?: boolean },
+      customClaims?: Record<string, unknown>,
+    ) => {
+      const { uid } = await auth.createUser({ email, password: 'operator-test-123', ...user });
+      if (customClaims) await auth.setCustomUserClaims(uid, customClaims);
+    };
+    await create('unverified@example.com', { emailVerified: false }, claims);
+    await create('disabled@example.com', { emailVerified: true, disabled: true }, claims);
+    await create('nosites@example.com', { emailVerified: true }, { role: 'operator', org: ORG });
+    await create('visitor@example.com', { emailVerified: false });
+    await create('beta@example.com', { emailVerified: true }, { beta: true });
+  };
+
+  /** Every account as Auth holds it: any change to one would show here. */
+  const accounts = async () =>
+    (await auth.listUsers()).users
+      .map((u) => u.toJSON())
+      .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+  it('lists accounts with an operator claim, counts the others, and changes nothing', async () => {
+    await seedAccounts();
+    const before = { docs: await snapshot(), accounts: await accounts() };
+    const report = await runPreCutoverAudit({ db, auth }, describeTarget(target));
+    expect({ docs: await snapshot(), accounts: await accounts() }).toEqual(before);
+
+    const section = report.sections.find((s) => s.id === 'accounts');
+    expect(section?.summary).toEqual({
+      accounts: 6,
+      withOperatorClaim: 4,
+      withoutOperatorClaim: 2,
+    });
+    expect(section?.notes?.[0]).toContain('4 with an operator claim (listed), 2 without');
+    expect(
+      Object.fromEntries(section?.rows.map((r) => [r.id, r.details?.nativeAccess]) ?? []),
+    ).toEqual({
+      'disabled@example.com': 'disabled',
+      'nosites@example.com': 'no-operator-role',
+      'porto@example.com': 'granted',
+      'unverified@example.com': 'email-not-verified',
+    });
+    expect(section?.rows.find((r) => r.id === 'porto@example.com')).toMatchObject({
+      findings: [],
+      details: {
+        emailVerified: true,
+        disabled: false,
+        claims,
+        scope: { orgId: ORG, sites: [SITE] },
+      },
+    });
+    expect(section?.rows.filter(needsAttention).length).toBe(3);
+  });
+
+  it('the script exits 1 for an unverified operator and 0 once it is verified', async () => {
+    await writeDocs(db, { 'queues/q_balcao_a_P4tc': contract['queues/q_balcao_a_P4tc'] });
+    const { uid } = await auth.createUser({
+      email: 'porto@example.com',
+      password: 'operator-test-123',
+      emailVerified: false,
+    });
+    await auth.setCustomUserClaims(uid, claims);
+
+    const table = await runScript('pre-cutover-audit.ts', []);
+    expect(table.code, table.stderr).toBe(1);
+    expect(table.stdout).toContain('== Queues: 1 checked, 0 need attention ==');
+    expect(table.stdout).toContain('== Operator accounts: 1 checked, 1 need attention ==');
+    expect(table.stdout).toMatch(/^ATTENTION {2}porto@example.com {2}operator .* NO /m);
+    expect(table.stdout).toContain('[!] The email is not verified');
+
+    const json = await runScript('pre-cutover-audit.ts', ['--json']);
+    expect(json.code).toBe(1);
+    expect(JSON.parse(json.stdout)).toMatchObject({
+      attention: 1,
+      sections: [
+        { id: 'queues', attention: 0 },
+        {
+          id: 'accounts',
+          attention: 1,
+          rows: [{ id: 'porto@example.com', uid, emailVerified: false, disabled: false, claims }],
+        },
+      ],
+    });
+
+    // The other section alone is clean, and an unknown one is a usage error.
+    expect((await runScript('pre-cutover-audit.ts', ['--section', 'queues'])).code).toBe(0);
+    expect((await runScript('pre-cutover-audit.ts', ['--section', 'nope'])).code).toBe(2);
+
+    await auth.updateUser(uid, { emailVerified: true });
+    const fixed = await runScript('pre-cutover-audit.ts', ['--section', 'accounts']);
+    expect(fixed.code, fixed.stderr).toBe(0);
+    expect(fixed.stdout).not.toContain('== Queues');
+    expect(fixed.stdout).toContain('Result: nothing needs attention.');
   });
 });
