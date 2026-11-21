@@ -1,5 +1,9 @@
 package pro.joaosousa.queuedisplay.operator.ui
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -12,12 +16,14 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.GraphicsMode
+import androidx.tv.material3.Surface
+import pro.joaosousa.queuedisplay.operator.queues.QueueError
 import pro.joaosousa.queuedisplay.operator.queues.QueueListState
 import pro.joaosousa.queuedisplay.tv.domain.model.Queue
-import pro.joaosousa.queuedisplay.tv.ui.theme.QueueDisplayTheme
+
 
 /**
- * Home goldens on the two TV sizes: 1920×1080 (a 1080p box at xhdpi, 960×540 dp) and 1280×720
+ * Login, setup and home goldens on the two TV sizes: 1920×1080 (a 1080p box at xhdpi, 960×540 dp) and 1280×720
  * (a 720p box at mdpi, 1280×720 dp). The video slot is left empty (O5). Record with
  * `./gradlew :operator:recordRoborazziDebug`, check with `verifyRoborazziDebug`.
  */
@@ -40,7 +46,7 @@ class HomeScreenshotTest {
         for ((size, qualifiers) in SIZES) {
             RuntimeEnvironment.setQualifiers(qualifiers)
             composeRule.setContent {
-                QueueDisplayTheme {
+                OperatorTheme {
                     HomeScreen(
                         queues = QueueListState.Data(queues),
                         writeError = null,
@@ -56,6 +62,40 @@ class HomeScreenshotTest {
             composeRule.mainClock.autoAdvance = false
             composeRule.onRoot().captureRoboImage("src/test/screenshots/home_${name}_$size.png")
         }
+    }
+
+    private fun captureScreen(name: String, content: @Composable () -> Unit) {
+        for ((size, qualifiers) in SIZES) {
+            RuntimeEnvironment.setQualifiers(qualifiers)
+            composeRule.setContent { OperatorTheme { Surface(modifier = Modifier.fillMaxSize(), shape = RectangleShape) { content() } } }
+            composeRule.mainClock.autoAdvance = false
+            composeRule.onRoot().captureRoboImage("src/test/screenshots/${name}_$size.png")
+        }
+    }
+
+    @Test
+    fun login() = captureScreen("login") {
+        LoginScreen(signingIn = false, failure = null, onSubmit = { _, _ -> }, onDismissFailure = {})
+    }
+
+    @Test
+    fun setup() = captureScreen("setup") {
+        SetupScreen(queues = QueueListState.Data(listOf(BALCAO, CONSULTAS)), onSelect = {}, onRetry = {}, onSignOut = {})
+    }
+
+    @Test
+    fun setupEmpty() = captureScreen("setup_empty") {
+        SetupScreen(queues = QueueListState.Data(emptyList()), onSelect = {}, onRetry = {}, onSignOut = {})
+    }
+
+    @Test
+    fun setupAccessDenied() = captureScreen("setup_access_denied") {
+        SetupScreen(
+            queues = QueueListState.Failed(QueueError.PermissionDenied),
+            onSelect = {},
+            onRetry = {},
+            onSignOut = {},
+        )
     }
 
     @Test

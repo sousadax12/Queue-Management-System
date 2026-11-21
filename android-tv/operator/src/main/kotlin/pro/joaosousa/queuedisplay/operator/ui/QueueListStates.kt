@@ -12,14 +12,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import pro.joaosousa.queuedisplay.operator.R
 import pro.joaosousa.queuedisplay.operator.queues.QueueError
 
 /**
- * What both screens show instead of queues: loading, a failed read, or none. A permission denial
- * reads "Access denied" and never "No queues" (the closed PR #20 mixed them up).
+ * What both screens show instead of queues: Flutter's spinner while loading, and a centred line of
+ * plain text for a failed read or no queues (Flutter: `Error: …` and "No documents found"). A
+ * permission denial reads "Access denied" and never "No queues" (the closed PR #20 mixed them up).
  */
 @Composable
 internal fun QueueListMessage(kind: QueueListMessageKind, modifier: Modifier = Modifier) {
@@ -29,7 +29,7 @@ internal fun QueueListMessage(kind: QueueListMessageKind, modifier: Modifier = M
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         when (kind) {
-            QueueListMessageKind.Loading -> Text(stringResource(R.string.loading))
+            QueueListMessageKind.Loading -> Spinner()
             QueueListMessageKind.Empty -> Text(
                 stringResource(R.string.queues_empty),
                 textAlign = TextAlign.Center,
@@ -38,7 +38,6 @@ internal fun QueueListMessage(kind: QueueListMessageKind, modifier: Modifier = M
             is QueueListMessageKind.Failed -> {
                 Text(
                     text = errorTitle(kind.error),
-                    style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.testTag(TestTags.QUEUES_ERROR),
                 )

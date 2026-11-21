@@ -120,8 +120,20 @@ private fun DisplayArea(
             contentAlignment = Alignment.Center,
             content = video,
         )
-        TickerZone(headlines = headlines, velocity = tickerVelocity, modifier = Modifier.align(Alignment.BottomCenter))
-        ClockZone(modifier = Modifier.align(Alignment.TopEnd).padding(10.dp), clock = clock)
+        TickerZone(
+            headlines = headlines,
+            velocity = tickerVelocity,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            textStyle = FlutterText.Inherited,
+            // Flutter's `TextScroll` sits at the top of its 40 dp strip and repeats after one space.
+            textAlignment = Alignment.TopStart,
+            loopSpacing = TICKER_LOOP_SPACING,
+        )
+        ClockZone(
+            modifier = Modifier.align(Alignment.TopEnd).padding(10.dp),
+            clock = clock,
+            textStyle = FlutterText.Inherited,
+        )
     }
 }
 
@@ -156,6 +168,7 @@ private fun QueueColumn(queues: QueueListState, modifier: Modifier = Modifier) {
                                 .weight(1f)
                                 .fillMaxWidth()
                                 .testTag(TestTags.homeTile(queue.id)),
+                            textStyle = FlutterText.Inherited,
                         )
                     }
                 }
@@ -167,3 +180,6 @@ private fun QueueColumn(queues: QueueListState, modifier: Modifier = Modifier) {
 private fun CenteredIn(modifier: Modifier, content: @Composable () -> Unit) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) { content() }
 }
+
+/** A space of the ticker's 20 sp text, the gap `TextScroll` leaves between rounds. */
+private val TICKER_LOOP_SPACING = 5.dp

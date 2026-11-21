@@ -12,9 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import pro.joaosousa.queuedisplay.operator.queues.QueueError
 import pro.joaosousa.queuedisplay.operator.queues.QueueListState
-import pro.joaosousa.queuedisplay.tv.domain.operator.OperatorScope
-import pro.joaosousa.queuedisplay.tv.domain.operator.StaffRole
-import pro.joaosousa.queuedisplay.tv.ui.theme.QueueDisplayTheme
+
 
 /** The setup and home screens' empty and error states: "Access denied" is never "No queues". */
 @RunWith(RobolectricTestRunner::class)
@@ -23,16 +21,14 @@ class QueueScreensTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val scope = OperatorScope(StaffRole.Operator, "org_a", listOf("site_a"))
-
     private fun setup(queues: QueueListState, onRetry: () -> Unit = {}) = composeRule.setContent {
-        QueueDisplayTheme {
-            SetupScreen(email = "op@example.com", scope = scope, queues = queues, onSelect = {}, onRetry = onRetry, onSignOut = {})
+        OperatorTheme {
+            SetupScreen(queues = queues, onSelect = {}, onRetry = onRetry, onSignOut = {})
         }
     }
 
     private fun home(queues: QueueListState) = composeRule.setContent {
-        QueueDisplayTheme { HomeScreen(queues = queues, writeError = null, headlines = emptyList(), tickerVelocity = 60.0, onAdvance = {}, onBack = {}) }
+        OperatorTheme { HomeScreen(queues = queues, writeError = null, headlines = emptyList(), tickerVelocity = 60.0, onAdvance = {}, onBack = {}) }
     }
 
     @Test
