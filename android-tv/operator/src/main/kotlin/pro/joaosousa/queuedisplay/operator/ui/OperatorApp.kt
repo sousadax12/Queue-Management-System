@@ -16,6 +16,7 @@ import androidx.tv.material3.Text
 import pro.joaosousa.queuedisplay.operator.R
 import pro.joaosousa.queuedisplay.operator.queues.QueuesUi
 import pro.joaosousa.queuedisplay.operator.session.SessionState
+import pro.joaosousa.queuedisplay.tv.domain.model.QueueDefaults
 import pro.joaosousa.queuedisplay.tv.domain.operator.QueueNumber
 
 /** What the signed-in screens can do. */
@@ -31,6 +32,7 @@ interface QueueActions {
 fun OperatorApp(
     state: SessionState,
     queues: QueuesUi,
+    headlines: List<String>,
     queueActions: QueueActions,
     onSignIn: (email: String, password: String) -> Unit,
     onSignOut: () -> Unit,
@@ -67,8 +69,11 @@ fun OperatorApp(
                 QueuesUi.Route.Home -> HomeScreen(
                     queues = queues.queues,
                     writeError = queues.writeError,
+                    headlines = headlines,
+                    tickerVelocity = queues.selectedQueue?.velocity ?: QueueDefaults.VELOCITY,
                     onAdvance = queueActions::advance,
                     onBack = queueActions::backToSetup,
+                    video = { HomeVideoSlot(queues.selectedQueue) },
                 )
             }
         }

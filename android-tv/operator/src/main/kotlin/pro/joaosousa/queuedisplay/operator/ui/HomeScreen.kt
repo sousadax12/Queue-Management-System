@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -29,22 +30,34 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import pro.joaosousa.queuedisplay.operator.queues.QueueError
 import pro.joaosousa.queuedisplay.operator.queues.QueueListState
+import java.time.Clock
+import pro.joaosousa.queuedisplay.tv.domain.model.Queue
 import pro.joaosousa.queuedisplay.tv.domain.operator.QueueNumber
+import pro.joaosousa.queuedisplay.tv.ui.zones.ClockZone
 import pro.joaosousa.queuedisplay.tv.ui.zones.QueueTile
+import pro.joaosousa.queuedisplay.tv.ui.zones.TickerZone
 
 /**
  * Home (design F6/F7, `lib/pages/home_page.dart`): the live queue column on the left (flex 1) and
- * the display area on the right (flex 3). D-pad right/left on key up advance the selected queue
- * by +1/−1. Back returns to setup.
+ * the display area on the right (flex 3). The display area is black, with the [video] filling it,
+ * the ticker along its bottom and the clock in its top-right corner, as in Flutter. D-pad
+ * right/left on key up advance the selected queue by +1/−1. Back returns to setup.
  *
- * The display area stays black for now: the clock and ticker arrive in O4, the video in O5.
+ * @param headlines the ticker's; empty hides it.
+ * @param tickerVelocity the selected queue's `velocity`, in dp per second.
+ * @param video the video slot, laid out over the whole display area under the ticker and clock.
+ *   The app passes [HomeVideoSlot]; previews and goldens leave it empty.
  */
 @Composable
 fun HomeScreen(
     queues: QueueListState,
     writeError: QueueError?,
+    headlines: List<String>,
+    tickerVelocity: Double,
     onAdvance: (QueueNumber.Direction) -> Unit,
     onBack: () -> Unit,
+    clock: Clock = Clock.systemDefaultZone(),
+    video: @Composable BoxScope.() -> Unit = {},
 ) {
     val focus = remember { FocusRequester() }
     BackHandler(onBack = onBack)
@@ -67,7 +80,13 @@ fun HomeScreen(
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             QueueColumn(queues, modifier = Modifier.weight(1f).fillMaxHeight())
-            Box(modifier = Modifier.weight(3f).fillMaxHeight().background(Color.Black))
+            DisplayArea(
+                headlines = headlines,
+                tickerVelocity = tickerVelocity,
+                clock = clock,
+                video = video,
+                modifier = Modifier.weight(3f).fillMaxHeight(),
+            )
         }
         if (writeError != null) {
             Text(
@@ -83,6 +102,34 @@ fun HomeScreen(
         }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+/** Flutter's `Stack`: video at the bottom, then the ticker, then the clock. */
+@Composable
+private fun DisplayArea(
+    headlines: List<String>,
+    tickerVelocity: Double,
+    clock: Clock,
+    video: @Composable BoxScope.() -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.background(Color.Black).testTag(TestTags.DISPLAY_AREA)) {
+        Box(
+            modifier = Modifier.fillMaxSize().testTag(TestTags.VIDEO_SLOT),
+            contentAlignment = Alignment.Center,
+            content = video,
+        )
+        TickerZone(headlines = headlines, velocity = tickerVelocity, modifier = Modifier.align(Alignment.BottomCenter))
+        ClockZone(modifier = Modifier.align(Alignment.TopEnd).padding(10.dp), clock = clock)
+    }
+}
+
+/**
+ * The video area of home (design F9), following the live [queue] doc (`videoUrl`, `videoVolume`).
+ * Empty (black) until O5 (#28) puts `LegacyVideoZone` here.
+ */
+@Composable
+fun BoxScope.HomeVideoSlot(@Suppress("UNUSED_PARAMETER") queue: Queue?) {
 }
 
 @Composable
