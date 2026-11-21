@@ -178,11 +178,13 @@ The report also lists legacy fields that each queue is missing, which make the F
 ## Audit production queues before the operator cutover
 
 Read-only: lists the `queues` docs that will look or behave differently on the native operator
-app (text colour, video URL kind, missing `orgId`/`siteId`, defaulted fields). It needs an
-explicit project, or `FIRESTORE_EMULATOR_HOST` for the emulator, and never writes.
+app (text colour, video URL kind, missing `orgId`/`siteId`, defaulted fields), and the operator
+accounts it would refuse (unverified email, disabled, claims without a scope). It needs an
+explicit project, or `FIRESTORE_EMULATOR_HOST` for the emulators, and never writes or changes an
+account. `--section queues` or `--section accounts` runs one part.
 
 ```bash
-pnpm audit:pre-cutover --project <id>          # table; exit 1 when a queue needs attention
+pnpm audit:pre-cutover --project <id>          # tables; exit 1 when something needs attention
 pnpm --silent audit:pre-cutover --project <id> --json   # machine-readable (no pnpm banner)
 ```
 

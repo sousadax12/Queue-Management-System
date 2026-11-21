@@ -129,25 +129,30 @@ builds and verifies a signed APK and keeps it as a workflow artifact, but publis
 
 ### Before the first box: run the audit
 
-The native app reads a few queue fields the Flutter app ignored or handled differently. Run the
-audit against production **before cutting any box over**, and again after you fix what it finds.
-It is read-only: it reads the `queues` collection once and never writes.
+The native app talks to the same Firebase project as the Flutter app: same `queues` documents,
+same accounts. No data is moved. But it reads a few queue fields the Flutter app ignored or
+handled differently, and it refuses to sign in accounts whose email is not verified, which the Flutter app does not
+check.
+Run the audit against production **before cutting any box over**, and again after you fix what
+it finds. It is read-only: it reads the `queues` collection once and lists the Firebase Auth
+accounts. It never writes and never changes an account.
 
 One-time setup (Node 24): `cd admin-portal && corepack enable && pnpm install`. Sign in with your
 own Google account (`gcloud auth application-default login`) or point
-`GOOGLE_APPLICATION_CREDENTIALS` at a service account key file; a read-only role such as
-`roles/datastore.viewer` is enough. Then, from the repo root:
+`GOOGLE_APPLICATION_CREDENTIALS` at a service account key file. Read-only roles are enough:
+`roles/datastore.viewer` for the queues and `roles/firebaseauth.viewer` for the accounts. Then,
+from the repo root:
 
 ```bash
 scripts/pre-cutover-audit.sh --project <firebase-project-id>
 ```
 
-Add `--json` for machine-readable output; `--help` lists everything. The exit code is 0 when
-nothing needs attention, 1 when a queue does, and 2 when the audit itself failed (bad
-credentials, wrong project id).
+Add `--json` for machine-readable output, or `--section queues` / `--section accounts` to run
+one part; `--help` lists everything. The exit code is 0 when nothing needs attention, 1 when a
+queue or an account does, and 2 when the audit itself failed (bad credentials, wrong project id).
 
-How to read the result. The table has one row per queue; `ATTENTION` rows are explained below it
-with a `[!]` line each. `[i]` lines are for information and need no action.
+**Queues.** The first table has one row per queue; `ATTENTION` rows are explained below it with a
+`[!]` line each. `[i]` lines are for information and need no action.
 
 | Column             | What it shows                                                                        | What to do when flagged                                                                                                                                                                                               |
 | ------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -159,6 +164,49 @@ with a `[!]` line each. `[i]` lines are for information and need no action.
 
 Cut over only boxes whose queues are `ok`, or whose flagged differences you have decided to
 accept.
+
+**Operator accounts.** The second table has one row per account that has an operator claim
+(`role`, `org` or `sites`); the line above it counts the accounts that have none, which are not
+listed. **Every account you will sign in with on a box must be `ok`.**
+
+| Column       | What it shows                                                                        | What to do when flagged                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ROLE`       | The `role` claim.                                                                    |                                                                                                                                                  |
+| `SCOPE`      | The org and sites the claims grant, by the app's own rules. `none` is flagged.       | The account has no usable role, org or sites, on either app. Re-run `pnpm grant-operator` for it ([operator accounts](../operator-accounts.md)). |
+| `VERIFIED`   | Whether the email is verified. `NO` is flagged.                                      | The Flutter app doesn't check this at sign-in; the native app refuses the account. Verify it (below) before cutting over a box that uses it.     |
+| `DISABLED`   | Whether the account is disabled. `YES` is flagged.                                   | It can't sign in on either app. Enable it in the Firebase console (**Authentication > Users**), or use another account.                          |
+| `NATIVE APP` | What the native app does at sign-in: `access`, or `no access` with the first reason. |                                                                                                                                                  |
+
+A flagged account that no box uses (an old test account, say) can be left alone; the audit still
+exits 1 for it.
+
+What an unverified account looks like on a box: the sign-in is accepted, then the app signs the
+account out and shows **No operator access** with "This account's email address is not verified.
+Ask your organisation admin to verify it." and an OK button back to the login form. (With
+"This account has no operator role for any site…" instead, the claims are the problem: `SCOPE` is
+`none`.)
+
+To verify an account, pick one. The audit never does this for you:
+
+- **Re-run `grant-operator`** with the account's current org and sites (the `SCOPE` column). It
+  marks the email as verified and leaves the password alone
+  ([operator accounts](../operator-accounts.md)). It needs credentials that can write.
+- **Verification email**, if the address has a real inbox: sign in to the admin portal with the
+  account. The portal shows **Verify your email**; press **Resend link**, open the link in the
+  email, then press **I've verified**.
+- **Admin SDK one-liner**, when you only want to flip the flag. It needs credentials that can
+  write (`roles/firebaseauth.admin`), and by running it you vouch for the address. Replace the
+  project id and the email:
+
+  ```bash
+  cd admin-portal/packages/contract
+  ```
+
+  ```bash
+  node --input-type=module -e "import { initializeApp } from 'firebase-admin/app'; import { getAuth } from 'firebase-admin/auth'; initializeApp({ projectId: '<firebase-project-id>' }); const u = await getAuth().getUserByEmail('<email>'); await getAuth().updateUser(u.uid, { emailVerified: true }); console.log('verified', u.email);"
+  ```
+
+Then run the audit again: the account's row must be `ok`.
 
 ### Cut over one box
 
