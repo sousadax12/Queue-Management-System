@@ -1,0 +1,156 @@
+name: Operator release
+
+# Builds the signed operator APK (android-tv/:operator) and attaches it, with its SHA-256, to a
+# GitHub Release. Runbook and the one-time keystore setup: docs/operator/DEPLOY.md.
+#
+# - Push a tag `operator-v<version>` (e.g. operator-v2.0.0) to publish a Release for it.
+# - Run it by hand (workflow_dispatch) to build and verify a signed APK without publishing one:
+#   the APK is only kept as a workflow artifact.
+on:
+  push:
+    tags:
+      - 'operator-v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'versionName for a dry-run build (nothing is published)'
+        required: false
+        default: '0.0.0-dev'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operator-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, sign and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    env:
+      OPERATOR_KEYSTORE_BASE64: ${{ secrets.OPERATOR_KEYSTORE_BASE64 }}
+      OPERATOR_KEYSTORE_PASSWORD: ${{ secrets.OPERATOR_KEYSTORE_PASSWORD }}
+      OPERATOR_KEY_ALIAS: ${{ secrets.OPERATOR_KEY_ALIAS }}
+      OPERATOR_KEY_PASSWORD: ${{ secrets.OPERATOR_KEY_PASSWORD }}
+
+    steps:
+      # First, so a missing secret fails in seconds and says which one.
+      - name: Check signing secrets
+        run: |
+          missing=()
+          for name in OPERATOR_KEYSTORE_BASE64 OPERATOR_KEYSTORE_PASSWORD OPERATOR_KEY_ALIAS OPERATOR_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error title=Missing signing secrets::Add these repository secrets: ${missing[*]} (see docs/operator/DEPLOY.md, 'One-time: create the release key')."
+            exit 1
+          fi
+          echo "All four signing secrets are set."
+
+      - name: Work out the version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ "$EVENT" = "push" ]; then
+            name="${GITHUB_REF_NAME#operator-v}"
+          else
+            name="$INPUT_VERSION"
+          fi
+          if ! [[ "$name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error title=Bad version::'$name' is not <major>.<minor>.<patch>[-suffix]; tag releases as operator-v2.0.0."
+            exit 1
+          fi
+          code=$((1000 + RUN_NUMBER))
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "versionName $name, versionCode $code"
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # Release builds don't write the shared Gradle cache.
+          cache-read-only: true
+
+      # No configuration cache: its entry would hold the signing passwords.
+      - name: Build the signed release APK
+        working-directory: android-tv
+        run: >-
+          ./gradlew :operator:assembleRelease --no-configuration-cache
+          -PoperatorVersionCode=${{ steps.version.outputs.code }}
+          -PoperatorVersionName=${{ steps.version.outputs.name }}
+
+      - name: Verify the signature
+        id: apk
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          apk=android-tv/operator/build/outputs/apk/release/operator-release.apk
+          if [ ! -f "$apk" ]; then
+            echo "::error::$apk was not built (is the APK unsigned?)"
+            ls -l android-tv/operator/build/outputs/apk/release/ || true
+            exit 1
+          fi
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          "$build_tools/apksigner" verify --verbose --print-certs "$apk" | tee apksigner.txt
+          if grep -q "CN=Android Debug" apksigner.txt; then
+            echo "::error::The APK is signed with an Android debug key"
+            exit 1
+          fi
+          "$build_tools/aapt2" dump badging "$apk" | head -1 | tee badging.txt
+          grep -q "versionCode='$VERSION_CODE' versionName='$VERSION_NAME'" badging.txt
+
+          mkdir -p dist
+          out="dist/queue-operator-$VERSION_NAME.apk"
+          cp "$apk" "$out"
+          (cd dist && sha256sum "$(basename "$out")" > "$(basename "$out").sha256")
+          cat dist/*.sha256
+          echo "cert_sha256=$(grep -m1 'certificate SHA-256 digest' apksigner.txt | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: operator-release-${{ steps.version.outputs.name }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish the GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          CERT_SHA256: ${{ steps.apk.outputs.cert_sha256 }}
+        run: |
+          prerelease=()
+          if [[ "$VERSION_NAME" == *-* ]]; then prerelease=(--prerelease); fi
+          cat > notes.md <<EOF
+          Operator app $VERSION_NAME (versionCode $VERSION_CODE), built from ${GITHUB_SHA::7}.
+
+          - Install: \`adb install -r queue-operator-$VERSION_NAME.apk\` (runbook: [docs/operator/DEPLOY.md](https://github.com/$GITHUB_REPOSITORY/blob/main/docs/operator/DEPLOY.md)).
+          - Signing certificate SHA-256: \`$CERT_SHA256\`
+          - APK SHA-256: \`$(cut -d' ' -f1 dist/*.sha256)\`
+          EOF
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --title "Operator $VERSION_NAME" --notes-file notes.md --verify-tag "${prerelease[@]}"
+          fi
