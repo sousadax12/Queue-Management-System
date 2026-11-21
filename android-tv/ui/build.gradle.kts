@@ -45,6 +45,9 @@ dependencies {
     api(libs.tv.material)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui.compose)
 
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)

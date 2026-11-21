@@ -36,6 +36,7 @@ import pro.joaosousa.queuedisplay.tv.domain.operator.QueueNumber
 import pro.joaosousa.queuedisplay.tv.ui.zones.ClockZone
 import pro.joaosousa.queuedisplay.tv.ui.zones.QueueTile
 import pro.joaosousa.queuedisplay.tv.ui.zones.TickerZone
+import pro.joaosousa.queuedisplay.tv.ui.zones.video.LegacyVideoZone
 
 /**
  * Home (design F6/F7, `lib/pages/home_page.dart`): the live queue column on the left (flex 1) and
@@ -125,11 +126,17 @@ private fun DisplayArea(
 }
 
 /**
- * The video area of home (design F9), following the live [queue] doc (`videoUrl`, `videoVolume`).
- * Empty (black) until O5 (#28) puts `LegacyVideoZone` here.
+ * The video area of home (design F9), following the live [queue] doc (`videoUrl`, `videoVolume`):
+ * a new URL switches the video in place. Black while no queue is selected.
  */
 @Composable
-fun BoxScope.HomeVideoSlot(@Suppress("UNUSED_PARAMETER") queue: Queue?) {
+fun BoxScope.HomeVideoSlot(queue: Queue?) {
+    if (queue == null) return
+    LegacyVideoZone(
+        videoUrl = queue.videoUrl,
+        videoVolume = queue.videoVolume,
+        modifier = Modifier.matchParentSize(),
+    )
 }
 
 @Composable
