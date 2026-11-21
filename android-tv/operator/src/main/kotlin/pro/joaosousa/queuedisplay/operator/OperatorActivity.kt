@@ -6,22 +6,36 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import pro.joaosousa.queuedisplay.operator.queues.QueuesViewModel
 import pro.joaosousa.queuedisplay.operator.ui.OperatorApp
+import pro.joaosousa.queuedisplay.operator.ui.QueueActions
+import pro.joaosousa.queuedisplay.tv.domain.operator.QueueNumber
 import pro.joaosousa.queuedisplay.tv.ui.theme.QueueDisplayTheme
 
-/** The single activity: login → (placeholder) setup, driven by the session state. */
+/** The single activity: login → setup → home, driven by the session and the selected queue. */
 @AndroidEntryPoint
 class OperatorActivity : ComponentActivity() {
 
     private val viewModel: OperatorViewModel by viewModels()
+    private val queuesViewModel: QueuesViewModel by viewModels()
+
+    private val queueActions = object : QueueActions {
+        override fun select(queueId: String) = queuesViewModel.select(queueId)
+        override fun advance(direction: QueueNumber.Direction) = queuesViewModel.advance(direction)
+        override fun backToSetup() = queuesViewModel.backToSetup()
+        override fun retry() = queuesViewModel.retry()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             QueueDisplayTheme {
                 val state = viewModel.state.collectAsStateWithLifecycle().value
+                val queues = queuesViewModel.ui.collectAsStateWithLifecycle().value
                 OperatorApp(
                     state = state,
+                    queues = queues,
+                    queueActions = queueActions,
                     onSignIn = viewModel::signIn,
                     onSignOut = viewModel::signOut,
                     onAcknowledge = viewModel::acknowledge,

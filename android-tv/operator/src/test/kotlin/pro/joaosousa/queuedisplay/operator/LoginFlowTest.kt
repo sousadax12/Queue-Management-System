@@ -25,6 +25,7 @@ import pro.joaosousa.queuedisplay.operator.FakeOperatorAuth.Companion.operatorCl
 import pro.joaosousa.queuedisplay.operator.FakeOperatorAuth.Companion.roleLessClaims
 import pro.joaosousa.queuedisplay.operator.auth.OperatorAuth
 import pro.joaosousa.queuedisplay.operator.auth.OperatorAuthModule
+import pro.joaosousa.queuedisplay.operator.queues.FakeQueueSource.Companion.ANALISES
 import pro.joaosousa.queuedisplay.operator.ui.TestTags
 
 /**
@@ -35,7 +36,7 @@ import pro.joaosousa.queuedisplay.operator.ui.TestTags
 @HiltAndroidTest
 @UninstallModules(OperatorAuthModule::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class)
+@Config(application = HiltTestApplication::class, qualifiers = "w1280dp-h720dp-land")
 class LoginFlowTest {
 
     private val fake = FakeOperatorAuth().apply {
@@ -116,6 +117,10 @@ class LoginFlowTest {
     fun signOutReturnsToLogin() {
         signInWithRemote("op@example.com", "secret")
 
+        // Setup focuses the first queue; D-pad up reaches Sign out.
+        composeRule.onNodeWithTag(TestTags.setupTile(ANALISES)).assertIsFocused()
+        composeRule.onNodeWithTag(TestTags.setupTile(ANALISES)).performKeyInput { pressKey(Key.DirectionUp) }
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag(TestTags.SIGN_OUT).assertIsFocused()
         composeRule.onNodeWithTag(TestTags.SIGN_OUT).performKeyInput { pressKey(Key.Enter) }
         composeRule.waitForIdle()

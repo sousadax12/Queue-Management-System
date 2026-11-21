@@ -14,12 +14,24 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import pro.joaosousa.queuedisplay.operator.R
+import pro.joaosousa.queuedisplay.operator.queues.QueuesUi
 import pro.joaosousa.queuedisplay.operator.session.SessionState
+import pro.joaosousa.queuedisplay.tv.domain.operator.QueueNumber
 
-/** One screen per [SessionState]. */
+/** What the signed-in screens can do. */
+interface QueueActions {
+    fun select(queueId: String)
+    fun advance(direction: QueueNumber.Direction)
+    fun backToSetup()
+    fun retry()
+}
+
+/** One screen per [SessionState]; once signed in, setup or home by [QueuesUi.route]. */
 @Composable
 fun OperatorApp(
     state: SessionState,
+    queues: QueuesUi,
+    queueActions: QueueActions,
     onSignIn: (email: String, password: String) -> Unit,
     onSignOut: () -> Unit,
     onAcknowledge: () -> Unit,
@@ -42,11 +54,23 @@ fun OperatorApp(
                 onDismissFailure = onAcknowledge,
             )
             is SessionState.NoAccess -> NoAccessScreen(reason = state.reason, onOk = onAcknowledge)
-            is SessionState.Ready -> SetupPlaceholderScreen(
-                email = state.email,
-                scope = state.scope,
-                onSignOut = onSignOut,
-            )
+            is SessionState.Ready -> when (queues.route) {
+                QueuesUi.Route.Loading -> Centered { Text(stringResource(R.string.loading)) }
+                QueuesUi.Route.Setup -> SetupScreen(
+                    email = state.email,
+                    scope = state.scope,
+                    queues = queues.queues,
+                    onSelect = queueActions::select,
+                    onRetry = queueActions::retry,
+                    onSignOut = onSignOut,
+                )
+                QueuesUi.Route.Home -> HomeScreen(
+                    queues = queues.queues,
+                    writeError = queues.writeError,
+                    onAdvance = queueActions::advance,
+                    onBack = queueActions::backToSetup,
+                )
+            }
         }
     }
 }
