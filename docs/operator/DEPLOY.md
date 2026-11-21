@@ -127,6 +127,41 @@ builds and verifies a signed APK and keeps it as a workflow artifact, but publis
 
 ## 3. Cut a box over from Flutter
 
+### Before the first box: run the audit
+
+The native app reads a few queue fields the Flutter app ignored or handled differently. Run the
+audit against production **before cutting any box over**, and again after you fix what it finds.
+It is read-only: it reads the `queues` collection once and never writes.
+
+One-time setup (Node 24): `cd admin-portal && corepack enable && pnpm install`. Sign in with your
+own Google account (`gcloud auth application-default login`) or point
+`GOOGLE_APPLICATION_CREDENTIALS` at a service account key file; a read-only role such as
+`roles/datastore.viewer` is enough. Then, from the repo root:
+
+```bash
+scripts/pre-cutover-audit.sh --project <firebase-project-id>
+```
+
+Add `--json` for machine-readable output; `--help` lists everything. The exit code is 0 when
+nothing needs attention, 1 when a queue does, and 2 when the audit itself failed (bad
+credentials, wrong project id).
+
+How to read the result. The table has one row per queue; `ATTENTION` rows are explained below it
+with a `[!]` line each. `[i]` lines are for information and need no action.
+
+| Column             | What it shows                                                                        | What to do when flagged                                                                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TEXT COLOUR`      | The tile's text colour on the native app. `(default)` means the field is missing.    | Flutter always painted white text; the native app paints `foregroundColor`. If it is **not white**, the tile will look different: set it to white in the portal, or accept the new look. Missing is fine (white).     |
+| `CONTRAST`         | Contrast of the text against `backgroundColor`. Below 3:1 is hard to read.           | Flagged only when a non-white `foregroundColor` causes it. With white text it is a note: the tile already looks like that on Flutter.                                                                                 |
+| `VIDEO`            | The kind of `videoURL`: `empty`, `youtube`, `mp4`, `hls-dash`, `http`, `other`.      | `http`: the video stays black on the native app, switch it to `https://` or YouTube. `hls-dash` and `other`: test that queue's video on the pilot box. `malformed` or `youtube-…`: the URL is wrong, fix or clear it. |
+| `ORG/SITE`         | Whether the queue has `orgId` and `siteId`.                                          | Without them the native app can't see the queue. Run the backfill first (`pnpm backfill:queues`, [admin-portal README](../../admin-portal/README.md)).                                                                |
+| `DEFAULTED FIELDS` | Fields that are missing or invalid, which the native app replaces with its defaults. | The `[!]` line lists each default. Flutter can't read such a queue at all; the native app shows it with the defaults and no error. Set the fields in the portal.                                                      |
+
+Cut over only boxes whose queues are `ok`, or whose flagged differences you have decided to
+accept.
+
+### Cut over one box
+
 You need: a computer with `adb` and the Android SDK build tools (for `apksigner`), the box on the
 same network with network debugging on (or a USB cable), the release APK, the operator account
 for the box's site, and the box's current Flutter APK as a rollback (step 4 below).
