@@ -5,12 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,34 +23,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Button
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
 import pro.joaosousa.queuedisplay.operator.R
 import pro.joaosousa.queuedisplay.operator.queues.QueueListState
 import pro.joaosousa.queuedisplay.tv.domain.model.Queue
-import pro.joaosousa.queuedisplay.tv.domain.operator.OperatorScope
-import pro.joaosousa.queuedisplay.tv.domain.operator.StaffRole
 import pro.joaosousa.queuedisplay.tv.ui.zones.QueueTile
 
-/** Flutter's `Colors.greenAccent`: the highlighted tile (design F5). */
-private val Highlight = Color(0xFF69F0AE)
+private val TileWidth = 300.dp
 
 /**
- * The queue picker (design F5, `lib/pages/setup_page.dart`): the scope's queues in one row of
- * 300 dp tiles. D-pad left/right moves the green highlight, select (or Enter, or a tap) picks.
- * Sign-out is above the row. A failed read offers Retry.
+ * The queue picker (design F5, `lib/pages/setup_page.dart`), laid out as Flutter's: the app bar
+ * with "Select a queue:" and the sign-out icon, then the scope's queues in one row of 300 dp
+ * tiles, as tall as the screen allows and spaced evenly. D-pad left/right moves the green
+ * highlight, select (or Enter, or a tap) picks; up reaches sign-out. A failed read offers Retry in
+ * the app bar. More tiles than fit scroll instead of overflowing.
  */
 @Composable
 fun SetupScreen(
-    email: String?,
-    scope: OperatorScope,
     queues: QueueListState,
     onSelect: (queueId: String) -> Unit,
     onRetry: () -> Unit,
@@ -60,30 +53,28 @@ fun SetupScreen(
 ) {
     val signOutFocus = remember { FocusRequester() }
     val firstTileFocus = remember { FocusRequester() }
-    Column(modifier = Modifier.fillMaxSize().padding(48.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.weight(1f)) {
-                Title(stringResource(R.string.setup_title))
-                Spacer(Modifier.height(8.dp))
-                Text(stringResource(R.string.setup_signed_in_as, email.orEmpty()))
-                Text(
-                    stringResource(R.string.setup_scope, scope.role.claim, scopeSummary(scope)),
-                    style = MaterialTheme.typography.bodySmall,
+    val hasTiles = (queues as? QueueListState.Data)?.queues?.isNotEmpty() == true
+    FlutterScaffold(
+        title = stringResource(R.string.setup_title),
+        actions = {
+            if (queues is QueueListState.Failed) {
+                FlutterButton(
+                    text = stringResource(R.string.retry),
+                    onClick = onRetry,
+                    modifier = Modifier.padding(end = 8.dp).testTag(TestTags.RETRY),
                 )
             }
-            if (queues is QueueListState.Failed) {
-                Button(onClick = onRetry, modifier = Modifier.testTag(TestTags.RETRY)) {
-                    Text(stringResource(R.string.retry))
-                }
-                Spacer(Modifier.width(16.dp))
-            }
-            Button(
+            FlutterIconButton(
+                icon = LogoutIcon,
+                contentDescription = stringResource(R.string.sign_out),
                 onClick = onSignOut,
-                modifier = Modifier.focusRequester(signOutFocus).testTag(TestTags.SIGN_OUT),
-            ) {
-                Text(stringResource(R.string.sign_out))
-            }
-        }
+                modifier = Modifier
+                    .focusRequester(signOutFocus)
+                    .focusProperties { if (hasTiles) down = firstTileFocus }
+                    .testTag(TestTags.SIGN_OUT),
+            )
+        },
+    ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             when (queues) {
                 QueueListState.Loading -> QueueListMessage(QueueListMessageKind.Loading)
@@ -92,33 +83,51 @@ fun SetupScreen(
                     if (queues.queues.isEmpty()) {
                         QueueListMessage(QueueListMessageKind.Empty)
                     } else {
-                        QueueRow(queues.queues, firstTileFocus, onSelect)
+                        QueueRow(queues.queues, firstTileFocus, signOutFocus, onSelect)
                     }
             }
         }
     }
-    val hasTiles = (queues as? QueueListState.Data)?.queues?.isNotEmpty() == true
     LaunchedEffect(hasTiles) {
         if (hasTiles) firstTileFocus.requestFocus() else signOutFocus.requestFocus()
     }
 }
 
 @Composable
-private fun QueueRow(queues: List<Queue>, firstTileFocus: FocusRequester, onSelect: (String) -> Unit) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.SETUP_ROW),
-    ) {
-        itemsIndexed(queues, key = { _, q -> q.id }) { index, queue ->
+private fun QueueRow(
+    queues: List<Queue>,
+    firstTileFocus: FocusRequester,
+    signOutFocus: FocusRequester,
+    onSelect: (String) -> Unit,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().testTag(TestTags.SETUP_ROW)) {
+        val tile: @Composable (Int, Queue) -> Unit = { index, queue ->
             SetupTile(
                 queue = queue,
                 onSelect = { onSelect(queue.id) },
-                modifier = if (index == 0) Modifier.focusRequester(firstTileFocus) else Modifier,
+                modifier = Modifier
+                    .then(if (index == 0) Modifier.focusRequester(firstTileFocus) else Modifier)
+                    .focusProperties { up = signOutFocus },
             )
+        }
+        if (TileWidth * queues.size <= maxWidth) {
+            // Flutter's `Row(mainAxisAlignment: spaceEvenly)`.
+            Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                queues.forEachIndexed { index, queue -> tile(index, queue) }
+            }
+        } else {
+            // Flutter overflows off the screen here; scroll instead.
+            LazyRow(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                itemsIndexed(queues, key = { _, q -> q.id }) { index, queue -> tile(index, queue) }
+            }
         }
     }
 }
 
+/** Flutter's tile `Container`: 50 dp above and below, 300 dp wide, an 8 dp frame around the queue. */
 @Composable
 private fun SetupTile(queue: Queue, onSelect: () -> Unit, modifier: Modifier = Modifier) {
     var focused by remember { mutableStateOf(false) }
@@ -126,23 +135,17 @@ private fun SetupTile(queue: Queue, onSelect: () -> Unit, modifier: Modifier = M
     Box(
         modifier = modifier
             .padding(vertical = 50.dp)
-            .width(300.dp)
+            .width(TileWidth)
+            .fillMaxHeight()
             .onFocusChanged { focused = it.isFocused }
-            // Clickable handles DPAD_CENTER, Enter and NumPad Enter on key up, and taps.
-            .clickable(onClick = onSelect)
-            .background(if (focused) Highlight else Color.Transparent, shape)
-            .border(1.dp, if (focused) Highlight else Color.Gray, shape)
+            // Clickable handles DPAD_CENTER, Enter and NumPad Enter on key up, and taps. No
+            // indication: the green frame is the highlight, as in Flutter.
+            .clickable(interactionSource = null, indication = null, onClick = onSelect)
+            .background(if (focused) FlutterColors.GreenAccent else Color.Transparent, shape)
+            .border(1.dp, if (focused) FlutterColors.GreenAccent else FlutterColors.Grey, shape)
             .padding(8.dp)
             .testTag(TestTags.setupTile(queue.id)),
     ) {
-        QueueTile(queue, modifier = Modifier.fillMaxWidth())
+        QueueTile(queue, modifier = Modifier.fillMaxSize(), textStyle = FlutterText.Inherited)
     }
-}
-
-@Composable
-private fun scopeSummary(scope: OperatorScope): String = when (scope.role) {
-    StaffRole.PlatformAdmin -> stringResource(R.string.setup_all_orgs)
-    StaffRole.OrgAdmin -> stringResource(R.string.setup_whole_org, scope.orgId.orEmpty())
-    StaffRole.Manager, StaffRole.Operator ->
-        stringResource(R.string.setup_sites, scope.orgId.orEmpty(), scope.sites.joinToString())
 }

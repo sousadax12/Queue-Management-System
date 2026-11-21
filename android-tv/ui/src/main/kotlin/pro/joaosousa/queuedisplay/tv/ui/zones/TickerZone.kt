@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
@@ -21,17 +22,29 @@ import androidx.tv.material3.Text
  * white 20 sp in a 40 dp strip, scrolling endlessly at the queue's [velocity] (Flutter logical
  * pixels per second, so dp/s). With no headlines it shows nothing at all, as Flutter did on any
  * error. Headlines that fit the width stand still, as with Flutter's `TextScroll`.
+ *
+ * @param textStyle merged under the zone's own colour and size: what the text inherits from its
+ *   surroundings (letter spacing, line height). The operator passes Flutter's.
+ * @param textAlignment where the line sits in the strip. Flutter's sits at the top.
+ * @param loopSpacing the gap between the end of the text and its next round.
  */
 @Composable
-fun TickerZone(headlines: List<String>, velocity: Double, modifier: Modifier = Modifier) {
+fun TickerZone(
+    headlines: List<String>,
+    velocity: Double,
+    modifier: Modifier = Modifier,
+    textStyle: TextStyle = TextStyle.Default,
+    textAlignment: Alignment = Alignment.CenterStart,
+    loopSpacing: Dp = 48.dp,
+) {
     if (headlines.isEmpty()) return
     Box(
         modifier = modifier.fillMaxWidth().height(40.dp).testTag(ZoneTags.TICKER),
-        contentAlignment = Alignment.CenterStart,
+        contentAlignment = textAlignment,
     ) {
         Text(
             text = headlines.joinToString(SEPARATOR),
-            style = TextStyle(color = Color.White, fontSize = 20.sp),
+            style = textStyle.merge(TextStyle(color = Color.White, fontSize = 20.sp)),
             maxLines = 1,
             softWrap = false,
             overflow = TextOverflow.Clip,
@@ -40,7 +53,7 @@ fun TickerZone(headlines: List<String>, velocity: Double, modifier: Modifier = M
                     iterations = Int.MAX_VALUE,
                     initialDelayMillis = 0,
                     repeatDelayMillis = 0,
-                    spacing = MarqueeSpacing(48.dp),
+                    spacing = MarqueeSpacing(loopSpacing),
                     velocity = velocity.dp,
                 )
             } else {

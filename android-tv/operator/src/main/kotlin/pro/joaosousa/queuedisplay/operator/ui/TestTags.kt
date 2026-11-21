@@ -15,6 +15,7 @@ object TestTags {
     const val WRITE_ERROR = "write_error"
     const val DISPLAY_AREA = "display_area"
     const val VIDEO_SLOT = "video_slot"
+    const val SPINNER = "spinner"
 
     fun setupTile(queueId: String) = "setup_tile_$queueId"
     fun homeTile(queueId: String) = "home_tile_$queueId"

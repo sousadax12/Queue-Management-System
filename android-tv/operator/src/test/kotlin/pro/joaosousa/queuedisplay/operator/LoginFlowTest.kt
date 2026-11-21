@@ -74,7 +74,6 @@ class LoginFlowTest {
         signInWithRemote(" op@example.com ", "secret")
 
         composeRule.onNodeWithText("Select a queue:").assertExists()
-        composeRule.onNodeWithText("Signed in as op@example.com").assertExists()
         assertEquals(listOf("op@example.com" to "secret"), fake.signIns)
         assertEquals(listOf(true), fake.claimRequests)
     }
