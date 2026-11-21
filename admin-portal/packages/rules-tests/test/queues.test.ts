@@ -118,6 +118,69 @@ describe('operator (the Flutter app)', () => {
   });
 });
 
+/**
+ * What the native operator app does (android-tv `:operator`, issue #26): the same scoped query,
+ * then a plain `update({number})` computed from the last known value with the 99↔0 wrap. Not a
+ * transaction, so it also works offline; the rules see one write per press.
+ */
+describe('operator (the native app)', () => {
+  const step = (n: number, up: boolean) => (up ? (n >= 99 ? 0 : n + 1) : n <= 0 ? 99 : n - 1);
+
+  /** One D-pad press: read the last known number from the scoped query, write the next one. */
+  const press = async (db: Firestore, queueId: string, up: boolean) => {
+    const snap = await getDocs(operatorQuery(db, ORG_A, [SITE_A]));
+    const queue = snap.docs.find((d) => d.id === queueId);
+    if (!queue) throw new Error(`${queueId} is not in the operator's query`);
+    const next = step(queue.get('number') as number, up);
+    await assertSucceeds(updateDoc(doc(db, `queues/${queueId}`), { number: next }));
+    return next;
+  };
+
+  const numberOf = async (queueId: string) => {
+    let n: unknown;
+    await t.admin(async (db) => {
+      n = (await getDoc(doc(db, `queues/${queueId}`))).get('number');
+    });
+    return n;
+  };
+
+  it('steps a queue of its site up and down from the last known value', async () => {
+    const db = t.db('operatorA');
+    expect(await press(db, QUEUE_A, true)).toBe(43);
+    expect(await press(db, QUEUE_A, false)).toBe(42);
+    expect(await press(db, QUEUE_A, false)).toBe(41);
+    expect(await numberOf(QUEUE_A)).toBe(41);
+  });
+
+  it('wraps 99 → 0 and 0 → 99', async () => {
+    const db = t.db('operatorA');
+    await assertSucceeds(advance(db, QUEUE_A, 99));
+    expect(await press(db, QUEUE_A, true)).toBe(0);
+    expect(await numberOf(QUEUE_A)).toBe(0);
+    expect(await press(db, QUEUE_A, false)).toBe(99);
+    expect(await numberOf(QUEUE_A)).toBe(99);
+  });
+
+  it('writes nothing but number', async () => {
+    const db = t.db('operatorA');
+    await assertFails(updateDoc(doc(db, `queues/${QUEUE_A}`), { number: 1, soundVolume: 0 }));
+    await assertFails(updateDoc(doc(db, `queues/${QUEUE_A}`), { number: 1, updatedBy: 'x' }));
+  });
+
+  it('is denied on a queue of another site of its own org', async () => {
+    const otherSite = 'site_porto_norte_Q1';
+    await t.admin(async (db) => {
+      await setDoc(doc(db, 'queues/q_norte_1'), { ...newQueue(ORG_A, otherSite), number: 99 });
+    });
+    await assertFails(advance(t.db('operatorA'), 'q_norte_1', 0));
+    await assertFails(getDocs(operatorQuery(t.db('operatorA'), ORG_A, [otherSite])));
+  });
+
+  it('is denied on a queue of another org', async () => {
+    await assertFails(advance(t.db('operatorA'), QUEUE_B, 1));
+  });
+});
+
 describe('TV device', () => {
   it('reads the queues of its own site', async () => {
     const db = t.db('tvA');
