@@ -34,6 +34,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -98,7 +99,7 @@ private fun DirectVideo(video: LegacyVideo.Direct, volume: Double) {
             },
         )
         exo.repeatMode = Player.REPEAT_MODE_ONE
-        exo.setMediaItem(MediaItem.fromUri(video.url))
+        exo.setMediaItem(video.toMediaItem())
         exo.playWhenReady = true
         exo.prepare()
         player = exo
@@ -116,6 +117,22 @@ private fun DirectVideo(video: LegacyVideo.Direct, volume: Double) {
         )
     }
 }
+
+/**
+ * The Media3 item for a direct URL. HLS and DASH get an explicit MIME type, so the player picks
+ * the adaptive media source from our own classification instead of guessing from the URL again.
+ */
+internal fun LegacyVideo.Direct.toMediaItem(): MediaItem =
+    MediaItem.Builder()
+        .setUri(url)
+        .setMimeType(
+            when (format) {
+                LegacyVideo.Format.Hls -> MimeTypes.APPLICATION_M3U8
+                LegacyVideo.Format.Dash -> MimeTypes.APPLICATION_MPD
+                LegacyVideo.Format.Progressive -> null
+            },
+        )
+        .build()
 
 @Composable
 private fun YouTubeVideo(video: LegacyVideo.YouTube) {
