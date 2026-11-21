@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // The native operator app (design docs/design/2026-11-21-native-operator-app.md, Option B): sign-in,
-// session and (later) queue setup, advancing and the display zones. It replaces the Flutter app
+// session, queue setup, advancing and (later) the display zones. It replaces the Flutter app
 // on the same boxes, so it keeps its applicationId and Firebase registration.
 plugins {
     alias(libs.plugins.android.application)
@@ -14,6 +14,9 @@ plugins {
 // Debug builds talk to the Firebase emulators when this is set, e.g.
 // `./gradlew :operator:installDebug -PfirebaseEmulatorHost=10.0.2.2` (see README, "Operator app").
 val firebaseEmulatorHost = providers.gradleProperty("firebaseEmulatorHost").orElse("").get()
+
+// The shared Firestore contract (C8): the repository tests read its queue fixtures with :data's loader.
+val contractDir = layout.projectDirectory.dir("../../admin-portal/packages/contract")
 
 android {
     namespace = "pro.joaosousa.queuedisplay.operator"
@@ -51,8 +54,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // :data's contract fixture loader (data/src/sharedTest), for the repository tests.
+    sourceSets.getByName("test").kotlin.srcDir("../data/src/sharedTest/kotlin")
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        unitTests.all { test ->
+            test.systemProperty("contract.dir", contractDir.asFile.absolutePath)
+            test.inputs.dir(contractDir.dir("fixtures")).withPathSensitivity(PathSensitivity.RELATIVE)
+        }
     }
 
     lint {
@@ -69,6 +79,7 @@ kotlin {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(project(":data"))
     implementation(project(":ui"))
 
     implementation(libs.androidx.core.ktx)
@@ -79,13 +90,16 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(platform(libs.compose.bom))
