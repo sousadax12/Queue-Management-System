@@ -12,8 +12,8 @@ The design and milestones are in [`docs/design/2026-11-15-android-tv-display.md`
 | Module | What lives there |
 |---|---|
 | `:app` | `DisplayActivity`, the Hilt application and app-wide bindings. Later: boot receiver, kiosk, pairing and diagnostics UI. |
-| `:domain` | Pure Kotlin/JVM, no Android dependency: models and logic (scheduler, sync planner, chime detector, ...). |
-| `:data` | Firestore mappers and repositories, media cache and prefetch. Empty until M2. |
+| `:domain` | Pure Kotlin/JVM, no Android dependency: models, repository interfaces and logic (`ObserveDisplay`; later the scheduler, sync planner, chime detector, ...). |
+| `:data` | Firestore mappers and repositories (M2). Later: media cache and prefetch. |
 | `:ui` | Theme, templates, zones and previews. Depends on `:domain`, never on `:data`. |
 
 Versions live in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
@@ -38,6 +38,69 @@ CI runs the same command from this directory (`.github/workflows/android-tv.yml`
 - `:app` and `:ui` tests run on Robolectric (Android SDK 35).
 - The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 - Reports: `*/build/reports/` (lint and tests).
+
+## Firestore contract
+
+The TV reads `devices/{uid}`, `sites/{siteId}`, its screen, its playlist and `queues where siteId == <its site>`.
+The contract is [`admin-portal/packages/contract`](../admin-portal/packages/contract) (zod schemas, golden fixtures, seed and backfill scripts) and the design doc's "Interface with the admin portal".
+
+- Mapping is manual (`:data`, `mapping/`), never `toObject()`. Every number is read through `Number`, colours stay `Long`, and a bad or missing field falls back to the defaults in the `:domain` models (`QueueDefaults` mirrors the contract's `QUEUE_DEFAULTS`).
+- Wrong types, unknown templates, and dropped playlist items or renditions are logged once under the `QueueDisplay` tag as `Contract: <doc path>.<field>: <problem>`. A screen whose template is missing or unknown shows `queues_media` and carries `Screen.templateFallback`.
+- The mapper tests load the contract's fixtures directly (`ContractFixtures`), so CI also runs when `admin-portal/packages/contract/fixtures/**` or `src/schemas/**` changes.
+
+## Run against the Firestore emulator
+
+Debug builds talk to the Firebase emulators when built with `-PfirebaseEmulatorHost=<host>`. They then use the emulator project `demo-qms`, the same one the contract's seed writes to, and never touch the real project. Release builds ignore the property.
+
+You need Node 24+, pnpm and `firebase-tools`. All `pnpm` commands below run from `admin-portal/`.
+
+1. Start the Auth and Firestore emulators from the repo root. They load `firestore.rules` and use the ports in `firebase.json`:
+
+   ```bash
+   firebase emulators:start --only auth,firestore --project demo-qms
+   ```
+
+2. Seed the contract fixtures (two orgs, sites, screens, queues, playlists and devices):
+
+   ```bash
+   pnpm install && pnpm seed
+   ```
+
+3. Build and launch the app. From an Android emulator the dev machine is `10.0.2.2`:
+
+   ```bash
+   ./gradlew installDebug -PfirebaseEmulatorHost=10.0.2.2
+   ```
+
+   ```bash
+   adb shell am start -n pro.joaosousa.queuedisplay.tv/.DisplayActivity
+   ```
+
+   On a real box, run `adb reverse tcp:8080 tcp:8080` and `adb reverse tcp:9099 tcp:9099` and build with `-PfirebaseEmulatorHost=127.0.0.1`.
+
+4. The box signs in anonymously, creates its `devices/{uid}` doc and shows **Not claimed yet** with its device id. Under the rules it can read nothing else until it's claimed. Claim it the way the portal will, with a pairing code for that uid:
+
+   ```bash
+   pnpm seed pairing-code --uid <device id>
+   ```
+
+   ```bash
+   pnpm seed claim <CODE> site_porto_3fKq scr_lobby_left_Q2mz
+   ```
+
+   Within a second or two the screen lists the site's queues with their numbers, plus the site, screen, template and playlist it resolved.
+
+5. Change a number and watch it update. The Flutter operator does this in real use. Against the emulator, an `owner` token skips the rules:
+
+   ```bash
+   curl -s -X PATCH -H "Authorization: Bearer owner" -H "Content-Type: application/json" "http://127.0.0.1:8080/v1/projects/demo-qms/databases/(default)/documents/queues/q_balcao_a_P4tc?updateMask.fieldPaths=number" -d '{"fields":{"number":{"integerValue":"43"}}}'
+   ```
+
+Flutter-era queues without `orgId`/`siteId` are invisible to boxes until they're backfilled. The contract's backfill sets both (a dry run unless `--apply`; see `scripts/backfill-queues.ts` for real projects):
+
+```bash
+pnpm backfill:queues --org <orgId> --site <siteId>
+```
 
 ## Run on an Android TV emulator
 
