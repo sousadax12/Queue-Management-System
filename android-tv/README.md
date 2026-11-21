@@ -16,9 +16,9 @@ See [Operator app](#operator-app) and [`docs/design/2026-11-21-native-operator-a
 |---|---|
 | `:app` | `DisplayActivity`, the Hilt application and app-wide bindings. Later: boot receiver, kiosk, pairing and diagnostics UI. |
 | `:domain` | Pure Kotlin/JVM, no Android dependency: models, repository interfaces and logic (`ObserveDisplay`; later the scheduler, sync planner, chime detector, ...). |
-| `:data` | Firestore mappers and repositories (M2). Later: media cache and prefetch. |
-| `:ui` | Theme, templates, zones and previews. Depends on `:domain`, never on `:data`. |
-| `:operator` | The operator app: email/password sign-in, the claim-based session (`OperatorSession`) and its screens. Uses `:domain` (`OperatorScope`) and `:ui`, not `:data`. |
+| `:data` | Firestore mappers and repositories (M2), and the RSS headline feed for the ticker (`RssHeadlineRepository`). Later: media cache and prefetch. |
+| `:ui` | Theme, templates, zones (`QueueTile` with its Font Awesome icon, `ClockZone`, `TickerZone`) and previews. Depends on `:domain`, never on `:data`. |
+| `:operator` | The operator app: email/password sign-in, the claim-based session (`OperatorSession`) and its screens. Uses `:domain`, `:data` and `:ui`. |
 
 Versions live in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
 
@@ -33,7 +33,7 @@ Versions live in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
 From this directory:
 
 ```bash
-./gradlew lint testDebugUnitTest assembleDebug
+./gradlew lint testDebugUnitTest verifyRoborazziDebug assembleDebug
 ```
 
 CI runs the same command from this directory (`.github/workflows/android-tv.yml`). From the repo root, use `android-tv/gradlew -p android-tv ...`.
@@ -42,6 +42,11 @@ CI runs the same command from this directory (`.github/workflows/android-tv.yml`
 - `:app`, `:ui` and `:operator` tests run on Robolectric (Android SDK 35).
 - The debug APKs are written to `app/build/outputs/apk/debug/app-debug.apk` and `operator/build/outputs/apk/debug/operator-debug.apk`.
 - Reports: `*/build/reports/` (lint and tests).
+- Screenshot goldens ([Roborazzi](https://github.com/takahirom/roborazzi), Robolectric native graphics) live in `ui/src/test/screenshots` and `operator/src/test/screenshots`.
+  After an intended UI change, re-record them with `./gradlew recordRoborazziDebug` and review the PNGs in the diff.
+  A failed `verifyRoborazziDebug` writes `*_compare.png` diffs to `*/build/outputs/roborazzi/` (CI uploads them with the reports).
+- The queue icons use Font Awesome 7 Free Solid (`ui/src/main/res/font/fa_solid_900.otf`, SIL OFL 1.1), the same file `font_awesome_flutter` 11.0.0 ships.
+  Its licence is bundled in the APKs as `assets/licenses/font-awesome-free.txt`.
 
 ## Firestore contract
 
@@ -171,7 +176,7 @@ Operators sign in with an email/password account whose ID token has `email_verif
 There is no anonymous sign-in: a restored anonymous session is signed out.
 An account without a usable role, org or sites, or with an unverified email, sees **No operator access** and is signed out.
 After sign-in, **setup** lists the queues of the account's scope (`orgId ==` the claim org, `siteId in` the claimed sites, as Flutter's `queuesQuery`) in a row of tiles: D-pad left/right moves the green highlight, select picks.
-**Home** shows the live queue column (the clock, ticker and icon arrive in O4, the video in O5). D-pad right is +1 and left is −1 on the selected queue, wrapping 99 → 0 and 0 → 99, from the last known value; each press plays the chime at the queue's `soundVolume`.
+**Home** is Flutter's layout at flex 1:3: the live queue column (each tile with its Font Awesome icon), and a black display area with the `HH:mm` clock top right and the RTP news ticker along the bottom (`https://www.rtp.pt/noticias/rss`, refreshed every 15 minutes, last good list kept, hidden until a fetch succeeds). The video slot (`HomeVideoSlot`) is empty until O5. D-pad right is +1 and left is −1 on the selected queue, wrapping 99 → 0 and 0 → 99, from the last known value; each press plays the chime at the queue's `soundVolume`.
 A press is a plain `update({number})`, so it works offline: the number changes on screen at once and syncs on reconnect (last writer wins).
 Back returns to setup. The selected queue is remembered across restarts (DataStore) and forgotten on sign-out.
 A denied read shows **Access denied**, never "No queues"; a write the server rejects shows a short message on home.

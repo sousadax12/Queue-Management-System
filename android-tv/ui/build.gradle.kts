@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
+    // Screenshot goldens: `recordRoborazziDebug` writes them to src/test/screenshots, `verifyRoborazziDebug` checks them.
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -48,5 +50,7 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
     debugImplementation(libs.compose.ui.test.manifest)
 }

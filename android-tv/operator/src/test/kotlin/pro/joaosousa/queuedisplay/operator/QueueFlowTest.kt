@@ -35,7 +35,9 @@ import pro.joaosousa.queuedisplay.operator.queues.FakeQueueSource.Companion.BALC
 import pro.joaosousa.queuedisplay.operator.queues.FakeQueueSource.Companion.CONSULTAS
 import pro.joaosousa.queuedisplay.operator.queues.FakeSelectedQueueStore
 import pro.joaosousa.queuedisplay.operator.queues.QueueError
+import pro.joaosousa.queuedisplay.operator.ticker.FakeHeadlineRepository
 import pro.joaosousa.queuedisplay.operator.ui.TestTags
+import pro.joaosousa.queuedisplay.tv.ui.zones.ZoneTags
 
 /**
  * Setup → home → advancing → Back, with key events only, as an operator with a remote would. The
@@ -66,6 +68,9 @@ class QueueFlowTest {
 
     @Inject
     lateinit var chime: FakeChime
+
+    @Inject
+    lateinit var headlines: FakeHeadlineRepository
 
     @Before
     fun inject() = hiltRule.inject()
@@ -142,5 +147,25 @@ class QueueFlowTest {
 
         composeRule.onNodeWithTag(TestTags.WRITE_ERROR).assertExists()
         composeRule.onNodeWithText("Access denied: the number was not saved.").assertExists()
+    }
+
+    @Test
+    fun homeShowsTheTickerAndClockAndKeepsTheDpad() {
+        composeRule.runOnIdle { store.selected.value = ANALISES }
+        composeRule.waitForIdle()
+
+        // No headlines yet (or the feed failed): no ticker.
+        composeRule.onNodeWithTag(ZoneTags.TICKER).assertDoesNotExist()
+        composeRule.onNodeWithTag(ZoneTags.CLOCK).assertExists()
+        composeRule.onNodeWithTag(TestTags.VIDEO_SLOT).assertExists()
+
+        headlines.headlines.value = listOf("First", "Second")
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("First   |   Second").assertExists()
+
+        // The ticker takes no focus: the D-pad still advances the queue.
+        composeRule.onNodeWithTag(TestTags.HOME).assertIsFocused()
+        press(TestTags.HOME, Key.DirectionRight)
+        homeNumber(ANALISES, 0)
     }
 }

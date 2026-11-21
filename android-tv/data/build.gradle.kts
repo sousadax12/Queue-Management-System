@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// Firestore mappers and repositories (M2). Later: media cache and prefetch.
+// Firestore mappers and repositories (M2), the RSS ticker feed (operator O4). Later: media cache and prefetch.
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.ksp)
@@ -57,5 +57,6 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlinx.serialization.json)
 }
