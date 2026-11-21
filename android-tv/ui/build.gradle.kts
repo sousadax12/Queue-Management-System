@@ -47,6 +47,9 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.media3.exoplayer)
+    // Adaptive streams for the legacy video zone: DefaultMediaSourceFactory finds these by reflection.
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.exoplayer.dash)
     implementation(libs.media3.ui.compose)
 
     testImplementation(platform(libs.compose.bom))
