@@ -29,7 +29,14 @@ export interface GrantResult {
 
 export class GrantError extends Error {
   constructor(
-    readonly code: 'user_not_found' | 'no_email' | 'bad_input',
+    readonly code:
+      | 'user_not_found'
+      | 'no_email'
+      | 'bad_input'
+      | 'org_not_found'
+      | 'site_not_found'
+      | 'site_wrong_org'
+      | 'role_conflict',
     message: string,
   ) {
     super(message);

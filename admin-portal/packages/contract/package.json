@@ -16,7 +16,8 @@
     "test:emulator": "firebase --config ../../firebase.json emulators:exec --only auth,firestore --project demo-qms \"vitest run --config vitest.emulator.config.ts\"",
     "seed": "tsx scripts/seed.ts",
     "backfill:queues": "tsx scripts/backfill-queues.ts",
-    "grant-platform-admin": "tsx scripts/grant-platform-admin.ts"
+    "grant-platform-admin": "tsx scripts/grant-platform-admin.ts",
+    "grant-operator": "tsx scripts/grant-operator.ts"
   },
   "dependencies": {
     "firebase-admin": "^14.5.1",

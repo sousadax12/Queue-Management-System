@@ -17,7 +17,8 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:emulator",
     "seed": "pnpm --filter @qms/contract seed",
     "backfill:queues": "pnpm --filter @qms/contract backfill:queues",
-    "grant-platform-admin": "pnpm --filter @qms/contract grant-platform-admin"
+    "grant-platform-admin": "pnpm --filter @qms/contract grant-platform-admin",
+    "grant-operator": "pnpm --filter @qms/contract grant-operator"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
