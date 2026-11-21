@@ -7,10 +7,18 @@ on:
     paths:
       - 'android-tv/**'
       - '.github/workflows/android-tv.yml'
+      # The shared Firestore contract (C8): the mapper tests read the fixtures, and a drift
+      # test reads QUEUE_DEFAULTS and TEMPLATE_IDS from the schemas.
+      - 'admin-portal/packages/contract/fixtures/**'
+      - 'admin-portal/packages/contract/src/schemas/**'
   pull_request:
     paths:
       - 'android-tv/**'
       - '.github/workflows/android-tv.yml'
+      # The shared Firestore contract (C8): the mapper tests read the fixtures, and a drift
+      # test reads QUEUE_DEFAULTS and TEMPLATE_IDS from the schemas.
+      - 'admin-portal/packages/contract/fixtures/**'
+      - 'admin-portal/packages/contract/src/schemas/**'
 
 permissions:
   contents: read
