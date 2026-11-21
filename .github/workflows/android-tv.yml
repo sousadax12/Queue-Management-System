@@ -47,9 +47,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       # Covers every module: the TV app (:app), the operator app (:operator) and the shared ones.
-      - name: Lint, unit tests and debug APKs
+      # verifyRoborazziDebug checks the screenshot goldens in */src/test/screenshots.
+      - name: Lint, unit tests, screenshot goldens and debug APKs
         working-directory: android-tv
-        run: ./gradlew lint testDebugUnitTest assembleDebug
+        run: ./gradlew lint testDebugUnitTest verifyRoborazziDebug assembleDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
@@ -74,4 +75,5 @@ jobs:
           path: |
             android-tv/*/build/reports/
             android-tv/*/build/test-results/
+            android-tv/*/build/outputs/roborazzi/
           retention-days: 14

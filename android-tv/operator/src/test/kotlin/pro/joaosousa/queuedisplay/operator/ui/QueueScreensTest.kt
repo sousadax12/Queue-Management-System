@@ -32,7 +32,7 @@ class QueueScreensTest {
     }
 
     private fun home(queues: QueueListState) = composeRule.setContent {
-        QueueDisplayTheme { HomeScreen(queues = queues, writeError = null, onAdvance = {}, onBack = {}) }
+        QueueDisplayTheme { HomeScreen(queues = queues, writeError = null, headlines = emptyList(), tickerVelocity = 60.0, onAdvance = {}, onBack = {}) }
     }
 
     @Test
