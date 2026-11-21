@@ -18,6 +18,12 @@ The short version:
 
 ## 1. One-time: create the release key
 
+> [!TIP]
+> Quick path: [`scripts/operator-release-wizard.sh`](../../scripts/operator-release-wizard.sh)
+> walks you through this section and the next one (keystore, secrets, backup, tag), checking each
+> step and asking before every change. Try `--dry-run` first to see what it would do. The manual
+> steps below do the same thing by hand.
+
 Do this once, on your own machine. Nobody else (and no agent) should ever see the keystore or
 its password.
 
@@ -81,6 +87,12 @@ never signs with the debug key. Setting only some of the four fails the build an
 missing ones.
 
 ## 2. Cut a release
+
+> [!TIP]
+> Quick path: the last stage of
+> [`scripts/operator-release-wizard.sh`](../../scripts/operator-release-wizard.sh) tags
+> `origin/main`, pushes the tag and links the workflow run. It is safe to re-run for later
+> releases: it skips the keystore and secrets once they are set.
 
 1. Make sure `main` is green and has what you want to ship.
 2. Tag the commit and push the tag. The tag is `operator-v<major>.<minor>.<patch>`, starting at
