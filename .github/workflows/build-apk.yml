@@ -1,18 +1,11 @@
 name: Build Unsigned APK
 
+# Called by ci.yml, which decides from the changed paths whether it runs.
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'android-tv/**'
-      - 'admin-portal/**'
-      - 'docs/**'
-  pull_request:
-    paths-ignore:
-      - 'android-tv/**'
-      - 'admin-portal/**'
-      - 'docs/**'
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   build:

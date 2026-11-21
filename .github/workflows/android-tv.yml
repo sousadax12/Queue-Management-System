@@ -1,31 +1,11 @@
 name: Android TV
 
+# Called by ci.yml, which decides from the changed paths whether it runs.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'android-tv/**'
-      - '.github/workflows/android-tv.yml'
-      # The shared Firestore contract (C8): the mapper tests read the fixtures, and a drift
-      # test reads QUEUE_DEFAULTS and TEMPLATE_IDS from the schemas.
-      - 'admin-portal/packages/contract/fixtures/**'
-      - 'admin-portal/packages/contract/src/schemas/**'
-  pull_request:
-    paths:
-      - 'android-tv/**'
-      - '.github/workflows/android-tv.yml'
-      # The shared Firestore contract (C8): the mapper tests read the fixtures, and a drift
-      # test reads QUEUE_DEFAULTS and TEMPLATE_IDS from the schemas.
-      - 'admin-portal/packages/contract/fixtures/**'
-      - 'admin-portal/packages/contract/src/schemas/**'
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: android-tv-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

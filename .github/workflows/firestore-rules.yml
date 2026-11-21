@@ -6,33 +6,12 @@ name: Firestore rules
 # has shipped and existing queues are backfilled (see the PR for #6): deploying these rules
 # locks out app builds that still sign in anonymously.
 
+# Called by ci.yml, which decides from the changed paths whether it runs.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'firestore.rules'
-      - 'firebase.json'
-      - 'admin-portal/packages/rules-tests/**'
-      - 'admin-portal/packages/contract/**'
-      - 'admin-portal/pnpm-lock.yaml'
-      - '.github/workflows/firestore-rules.yml'
-  pull_request:
-    paths:
-      - 'firestore.rules'
-      - 'firebase.json'
-      - 'admin-portal/packages/rules-tests/**'
-      - 'admin-portal/packages/contract/**'
-      - 'admin-portal/pnpm-lock.yaml'
-      - '.github/workflows/firestore-rules.yml'
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: firestore-rules-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
