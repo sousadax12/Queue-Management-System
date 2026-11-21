@@ -33,7 +33,12 @@ const pkgDir = fileURLToPath(new URL('../../', import.meta.url));
 
 /** Run a package script (`seed`, `backfill:queues`) through tsx, like a user would. */
 export async function runScript(
-  script: 'seed.ts' | 'backfill-queues.ts' | 'grant-platform-admin.ts' | 'grant-operator.ts',
+  script:
+    | 'seed.ts'
+    | 'backfill-queues.ts'
+    | 'pre-cutover-audit.ts'
+    | 'grant-platform-admin.ts'
+    | 'grant-operator.ts',
   args: string[],
   opts: { stdin?: string; env?: NodeJS.ProcessEnv } = {},
 ): Promise<{ code: number; stdout: string; stderr: string }> {

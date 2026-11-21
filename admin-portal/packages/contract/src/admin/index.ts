@@ -5,3 +5,4 @@ export * from './seed.js';
 export * from './backfill.js';
 export * from './grant.js';
 export * from './grant-operator.js';
+export * from './audit.js';
