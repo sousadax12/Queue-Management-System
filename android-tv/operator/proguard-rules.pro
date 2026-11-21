@@ -1,1 +1,1 @@
-# Release builds are not minified yet (release signing arrives in O6).
+# Release builds are not minified (see the comment in build.gradle.kts, O6).
