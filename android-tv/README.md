@@ -141,6 +141,27 @@ pnpm backfill:queues --org <orgId> --site <siteId>
 
 The app also appears in the TV launcher's app row with its banner.
 
+### Emulator setup: keyboard and D-pad
+
+TV AVDs are created with keyboard input off (`hw.keyboard=no`). The emulator then drops every key from the host keyboard, so the arrow keys do nothing on any screen. On the operator app, left and right don't change the queue number (#38). `adb shell input keyevent` still works, because it injects keys inside the guest.
+
+1. With the emulator stopped, set these lines in `~/.android/avd/<name>.avd/config.ini` (Android Studio calls the first one **Enable keyboard input**, in the AVD's advanced or additional settings):
+
+   ```ini
+   hw.keyboard=yes
+   hw.dPad=yes
+   ```
+
+2. Cold-boot so the new hardware config applies, rather than restoring a snapshot taken with the old one:
+
+   ```bash
+   emulator -avd <name> -no-snapshot-load
+   ```
+
+The host arrow keys then reach the guest as `KEYCODE_DPAD_LEFT/RIGHT/UP/DOWN` (the default key layout maps them; nothing to configure), and Enter selects. On the operator's home screen, left is −1 and right is +1 on the selected queue.
+
+Another option is the emulator's on-screen D-pad: **Extended controls (⋯) → Directional pad**.
+
 ## Install on a box with `adb`
 
 1. On the box, enable developer options (**Settings → System → About → Android TV OS build**, press OK seven times).
