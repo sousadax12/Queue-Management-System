@@ -215,12 +215,14 @@ Then sign in to the Flutter app as before. Where to get the Flutter APK, best fi
 
 1. The `flutter-<box-name>.apk` you pulled from that box in step 3 of the cutover: exactly what
    the box ran.
-2. The latest `app-debug-apk` artifact of the **Build Unsigned APK** workflow
-   ([`build-apk.yml`](../../.github/workflows/build-apk.yml)) on `main`. Artifacts expire after
-   30 days, so download one before the pilot and keep it with the box APKs:
+2. The latest `app-debug-apk` artifact from `main`. The **CI** workflow
+   ([`ci.yml`](../../.github/workflows/ci.yml)) builds it, through
+   [`build-apk.yml`](../../.github/workflows/build-apk.yml), on pushes that touch the Flutter
+   app, so not every CI run has one. Artifacts expire after 30 days, so download one before the
+   pilot and keep it with the box APKs. This finds the newest unexpired one from `main`:
 
    ```bash
-   gh run download -R sousadax12/Queue-Management-System "$(gh run list -R sousadax12/Queue-Management-System --workflow build-apk.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')" --name app-debug-apk
+   gh run download -R sousadax12/Queue-Management-System "$(gh api 'repos/sousadax12/Queue-Management-System/actions/artifacts?name=app-debug-apk&per_page=50' --jq '[.artifacts[] | select(.workflow_run.head_branch == "main" and (.expired | not))][0].workflow_run.id')" --name app-debug-apk
    ```
 
 3. Build it from the repo root: `flutter build apk --debug --no-tree-shake-icons`
