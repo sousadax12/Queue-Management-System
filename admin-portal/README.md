@@ -175,6 +175,22 @@ Options:
 
 The report also lists legacy fields that each queue is missing, which make the Flutter mapper throw.
 
+## Audit production queues before the operator cutover
+
+Read-only: lists the `queues` docs that will look or behave differently on the native operator
+app (text colour, video URL kind, missing `orgId`/`siteId`, defaulted fields). It needs an
+explicit project, or `FIRESTORE_EMULATOR_HOST` for the emulator, and never writes.
+
+```bash
+pnpm audit:pre-cutover --project <id>          # table; exit 1 when a queue needs attention
+pnpm --silent audit:pre-cutover --project <id> --json   # machine-readable (no pnpm banner)
+```
+
+`scripts/pre-cutover-audit.sh` at the repo root runs the same thing from any directory. How to
+read the result: [`docs/operator/DEPLOY.md`](../docs/operator/DEPLOY.md), section 3. The checks
+are in `packages/contract/src/audit/`; a new report section is one more entry in `AUDIT_SECTIONS`
+(`src/admin/audit.ts`).
+
 ## Grant the first platform admin
 
 Roles are custom claims (`role`, `org`, `sites`), mirrored into `users/{uid}`. Until `media-api`
