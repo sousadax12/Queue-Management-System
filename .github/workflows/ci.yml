@@ -1,0 +1,133 @@
+name: CI
+
+# The single entry point for CI. It works out which parts of the repo changed, calls only the
+# suites that cover them (each is a reusable workflow next to this file), and ends with
+# `CI gate`: the one check branch protection on main requires. Path filters live here, not in
+# the suites, so `CI gate` always runs and never sits at "Expected".
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  # Runs every suite.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      admin-portal: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.admin-portal == 'true' }}
+      android-tv: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android-tv == 'true' }}
+      flutter: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.flutter == 'true' }}
+      firestore-rules: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.firestore-rules == 'true' }}
+
+    steps:
+      # Pull requests are diffed through the API; pushes need the git history.
+      - name: Checkout code
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v7
+
+      - name: Filter paths
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # A file counts when it matches a positive pattern and no `!` pattern.
+          predicate-quantifier: some-with-excludes
+          filters: |
+            admin-portal:
+              - 'admin-portal/**'
+              - 'android-tv/contract/**'
+              - '.github/workflows/admin-portal.yml'
+              - '.github/workflows/ci.yml'
+            android-tv:
+              - 'android-tv/**'
+              - '.github/workflows/android-tv.yml'
+              # The shared Firestore contract (C8): the mapper tests read the fixtures, and a
+              # drift test reads QUEUE_DEFAULTS and TEMPLATE_IDS from the schemas.
+              - 'admin-portal/packages/contract/fixtures/**'
+              - 'admin-portal/packages/contract/src/schemas/**'
+              - '.github/workflows/ci.yml'
+            # The Flutter app: everything outside the other projects and the docs.
+            flutter:
+              - '**'
+              - '!android-tv/**'
+              - '!admin-portal/**'
+              - '!docs/**'
+            firestore-rules:
+              - 'firestore.rules'
+              - 'firebase.json'
+              - 'admin-portal/packages/rules-tests/**'
+              - 'admin-portal/packages/contract/**'
+              - 'admin-portal/pnpm-lock.yaml'
+              - '.github/workflows/firestore-rules.yml'
+              - '.github/workflows/ci.yml'
+
+  admin-portal:
+    name: Admin portal
+    needs: changes
+    if: needs.changes.outputs.admin-portal == 'true'
+    permissions:
+      contents: read
+      # The web image is pushed to GHCR from main.
+      packages: write
+    uses: ./.github/workflows/admin-portal.yml
+    secrets: inherit
+
+  android-tv:
+    name: Android TV
+    needs: changes
+    if: needs.changes.outputs.android-tv == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/android-tv.yml
+
+  flutter:
+    name: Flutter app
+    needs: changes
+    if: needs.changes.outputs.flutter == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build-apk.yml
+
+  firestore-rules:
+    name: Firestore rules
+    needs: changes
+    if: needs.changes.outputs.firestore-rules == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/firestore-rules.yml
+    secrets: inherit
+
+  gate:
+    name: CI gate
+    if: always()
+    needs: [changes, admin-portal, android-tv, flutter, firestore-rules]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check suite results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          if [ "$FAILED" = "true" ]; then
+            echo "::error::A CI suite failed or was cancelled."
+            exit 1
+          fi
+          echo "Every suite that ran passed."
