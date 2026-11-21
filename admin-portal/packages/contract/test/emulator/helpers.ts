@@ -1,6 +1,5 @@
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
 import { connect, resolveTarget } from '../../src/admin/index.js';
 
 export const target = resolveTarget();
@@ -34,18 +33,20 @@ const pkgDir = fileURLToPath(new URL('../../', import.meta.url));
 
 /** Run a package script (`seed`, `backfill:queues`) through tsx, like a user would. */
 export async function runScript(
-  script: 'seed.ts' | 'backfill-queues.ts' | 'grant-platform-admin.ts',
+  script: 'seed.ts' | 'backfill-queues.ts' | 'grant-platform-admin.ts' | 'grant-operator.ts',
   args: string[],
+  opts: { stdin?: string; env?: NodeJS.ProcessEnv } = {},
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  try {
-    const { stdout, stderr } = await promisify(execFile)(
+  return new Promise((resolve) => {
+    const child = execFile(
       'pnpm',
       ['exec', 'tsx', `scripts/${script}`, ...args],
-      { cwd: pkgDir, env: process.env },
+      { cwd: pkgDir, env: opts.env ?? process.env },
+      (err, stdout, stderr) => {
+        const code = err ? (typeof err.code === 'number' ? err.code : 1) : 0;
+        resolve({ code, stdout, stderr });
+      },
     );
-    return { code: 0, stdout, stderr };
-  } catch (err) {
-    const e = err as { code?: number; stdout?: string; stderr?: string };
-    return { code: e.code ?? 1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
-  }
+    child.stdin?.end(opts.stdin ?? '');
+  });
 }

@@ -194,6 +194,18 @@ FIREBASE_SERVICE_ACCOUNT="$(cat ~/keys/sa.json)" \
 - The script keeps the user's other claims and is idempotent. The user picks up the role on
   their next token refresh: **Check again** on the portal's "no access" page.
 
+## Create operator accounts
+
+`grant-operator` creates the email/password accounts the operator app signs in with: verified
+email, claims `{role: 'operator' | 'manager', org, sites}`, and the `users/{uid}` mirror. Backfill
+the site's queues first. Details, options and the one-account-per-site default are in
+[`docs/operator-accounts.md`](../docs/operator-accounts.md).
+
+```bash
+pnpm grant-operator --email porto@example.com --org <orgId> --site <siteId> --dry-run
+pnpm grant-operator --email porto@example.com --org <orgId> --site <siteId>   # Auth + Firestore emulators
+```
+
 ## Contract rules of thumb
 
 - [`packages/contract/fixtures/README.md`](packages/contract/fixtures/README.md) defines the JSON

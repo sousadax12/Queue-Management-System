@@ -7,7 +7,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint . && prettier --check .",
-    "test:emulator": "firebase --config firebase.json emulators:exec --only firestore --project demo-qms-rules \"vitest run\""
+    "test:emulator": "firebase --config firebase.json emulators:exec --only auth,firestore --project demo-qms-rules \"vitest run\""
   },
   "dependencies": {
     "@qms/contract": "workspace:*"
